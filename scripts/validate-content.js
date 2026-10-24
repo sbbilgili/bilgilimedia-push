@@ -50,11 +50,21 @@ if (!Number.isInteger(config.schemaVersion) || config.schemaVersion < 2) {
 if (!config.compatibility || config.compatibility.legacyCategoryList !== true) {
   throw new Error("app-config must preserve the legacy category list for current clients");
 }
-if (!Array.isArray(config.categories) || config.categories.length < 1) {
-  throw new Error("app-config categories must be a non-empty array");
+if (
+  !Number.isInteger(config.compatibility.minimumClientSchemaVersion) ||
+  config.compatibility.minimumClientSchemaVersion < 1 ||
+  config.compatibility.minimumClientSchemaVersion > 2
+) {
+  throw new Error("minimumClientSchemaVersion must be between 1 and 2");
 }
-if (!Array.isArray(config.sections) || config.sections.length < 1) {
-  throw new Error("app-config sections must be a non-empty array");
+if (config.compatibility.navigationSchemaVersion !== 1) {
+  throw new Error("navigationSchemaVersion must be 1");
+}
+if (!Array.isArray(config.categories) || config.categories.length < 1 || config.categories.length > 100) {
+  throw new Error("app-config categories must contain 1..100 items");
+}
+if (!Array.isArray(config.sections) || config.sections.length < 1 || config.sections.length > 100) {
+  throw new Error("app-config sections must contain 1..100 items");
 }
 
 const sections = new Map();
@@ -78,7 +88,7 @@ for (const item of config.categories) {
   const topic = String(item.topic || "").trim();
   const sectionId = requireStableId(item.sectionId, "Category sectionId " + id);
   if (!name || !topic) throw new Error("Enabled category is missing name/topic: " + id);
-  if (!/^[a-zA-Z0-9._~%-]+$/.test(topic)) {
+  if (!/^[a-zA-Z0-9._~%-]{1,900}$/.test(topic)) {
     throw new Error("Invalid FCM topic: " + topic);
   }
   requireOrder(item.order, "Category order " + id);
@@ -130,6 +140,9 @@ for (const article of feed.articles) {
 }
 
 const enabledPages = new Map();
+if (Array.isArray(config.extraPages) && config.extraPages.length > 50) {
+  throw new Error("app-config extraPages may contain at most 50 items");
+}
 if (Array.isArray(config.extraPages)) {
   for (const page of config.extraPages) {
     if (!page || page.enabled === false) continue;
@@ -166,6 +179,7 @@ function validateMenuNode(node, depth) {
   requireOrder(node.order, "Navigation order " + id);
   if (menuIds.has(id)) throw new Error("Duplicate navigation item id: " + id);
   menuIds.add(id);
+  if (menuIds.size > 100) throw new Error("Navigation may contain at most 100 enabled nodes");
 
   if (type === "group") {
     if (!Array.isArray(node.children) || node.children.length < 1) {
@@ -207,6 +221,9 @@ for (const categoryId of categoriesById.keys()) {
 }
 
 const sponsorAds = config.sponsorAds || {};
+if (Array.isArray(sponsorAds.items) && sponsorAds.items.length > 50) {
+  throw new Error("sponsorAds.items may contain at most 50 items");
+}
 if (sponsorAds.enabled) {
   if (!Array.isArray(sponsorAds.items)) throw new Error("sponsorAds.items must be an array");
   for (const item of sponsorAds.items) {
