@@ -177,8 +177,10 @@ final class AppConfig {
             item.categoryId = safeId(object.optString("categoryId", ""));
             if (item.categoryId.isEmpty()) return null;
         } else if ("page".equals(type)) {
-            item.url = object.optString("url", "").trim();
-            if (!isTrustedBilgiliUrl(item.url)) return null;
+            item.pageId = safeId(object.optString("pageId", ""));
+            Models.ExtraPage page = findPage(config, item.pageId);
+            if (page == null) return null;
+            item.url = page.url;
         }
 
         count[0]++;
@@ -196,6 +198,14 @@ final class AppConfig {
             }
         }
         return item;
+    }
+
+    private static Models.ExtraPage findPage(AppConfig config, String pageId) {
+        if (pageId == null || pageId.isEmpty()) return null;
+        for (Models.ExtraPage page : config.extraPages) {
+            if (pageId.equals(page.id)) return page;
+        }
+        return null;
     }
 
     private static void parseSponsors(JSONObject object, AppConfig config) {
