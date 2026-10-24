@@ -2,7 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
 
-const FEED_PATH = path.join(process.cwd(), "content", "feed.json");\nconst STATE_PATH = path.join(process.cwd(), "state", "known.json");
+const FEED_PATH = path.join(process.cwd(), "content", "feed.json");
+const STATE_PATH = path.join(process.cwd(), "state", "known.json");
 
 const CONFIG_PATH = path.join(process.cwd(), "hosting", "app-config.json");
 
