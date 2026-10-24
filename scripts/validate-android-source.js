@@ -144,6 +144,7 @@ requireAll(main, [
 const socialCount = (social.match(/x\.add\(a\(/g) || []).length;
 if (socialCount !== 33) throw new Error("Golden social-account count must be 33, found " + socialCount);
 
+if (main.includes("İçerik Bölümleri")) throw new Error("Non-golden More-screen section must not be visible in the 1.4.8 parity client");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
