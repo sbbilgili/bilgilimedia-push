@@ -911,7 +911,7 @@ public class MainActivity extends Activity {
         content.addView(menuCard("Canlı içerik akışı","Sürüm "+feedVersion+" • "+articles.size()+" içerik",null));
         content.addView(menuCard("Android App Links","Etkin • web.app/content/…",null));
 
-        sectionTitle("","İletişim");
+        sectionTitle("BilgiliMedia","İletişim");
         content.addView(menuCard("▣ Web sitemiz","spoo.me/bilgilimedia",()->openUrl(WEB)));
         content.addView(menuCard("✉ E-posta",EMAIL,this::email));
     }
