@@ -9,7 +9,7 @@ Bu dosya 1.4.8 ve sonraki üretim adayları için yayın öncesi kontrol kapıs�
 - [ ] `versionCode` önceki Play sürümünden büyüktür.
 - [ ] Target SDK API 36 veya Google Play'in o tarihte istediği daha yeni seviye.
 - [ ] Release AAB doğru upload key ile imzalandı.
-- [ ] Kamera, mikrofon, konum, rehber gibi gereksiz izinlar manifestte yok.
+- [ ] Kamera, mikrofon, konum, rehber gibi gereksiz izinler manifestte yok.
 - [ ] Android 13+ bildirim izni akışı gerçek cihazda test edildi.
 - [ ] FCM topic aboneliği, yeni kategori ekleme ve topic temizleme gerçek cihazda test edildi.
 - [ ] App Link ile içerik açma ve tarayıcı fallback gerçek cihazda test edildi.
@@ -24,7 +24,7 @@ Bu dosya 1.4.8 ve sonraki üretim adayları için yayın öncesi kontrol kapıs�
 ## Gizlilik ve Veri Güvenliği
 
 - [ ] Herkese açık gizlilik politikası canlı.
-- [ ] Play Console Data safety beyanı FCM/Firebase Installations kullanımını hesaba katıyor; eski "hiç veri toplanmıyor" taslağı kullanılmıyor.
+- [ ] Play Console Data safety beyanı FCM/Firebase Installations kullanımını hesaba katıyor; eski "hiç veri toplanmıyor" taslağı kullanılmıyor. `PLAY_DATA_SAFETY_DRAFT.md` güncel form ile karşılaştırıldı.
 - [ ] Uygulamada ayrı analytics veya reklam SDK'sı yoksa Play beyanı buna göre dolduruluyor.
 - [ ] Sponsor reklam sistemi yayına alınacaksa "Contains ads" ve ilgili gizlilik/Data safety beyanları **reklam açılmadan önce** güncelleniyor.
 - [ ] Veri satışı yapılmadığı beyanı ürün davranışıyla uyumlu.
