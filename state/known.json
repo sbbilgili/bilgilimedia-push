@@ -1,12 +1,9 @@
 {
   "initialized": true,
-  "lastFeedVersion": 9,
-  "lastCheckedAt": "2026-10-24T10:51:04.368Z",
-  "lastNewIds": [
-    "push-test-animasyon-20261024"
-  ],
+  "lastFeedVersion": 10,
+  "lastCheckedAt": "2026-10-24T10:52:28.840Z",
+  "lastNewIds": [],
   "knownIds": [
-    "push-test-animasyon-20261024",
     "delta",
     "volkan",
     "istanbul",
