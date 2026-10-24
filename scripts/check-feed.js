@@ -129,7 +129,6 @@ async function main() {
       "Articles:",
       ids.length
     );
-    writeState(feed, ids, []);
     return;
   }
 
