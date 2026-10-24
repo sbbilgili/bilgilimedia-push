@@ -45,4 +45,4 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
         run: |
-          npx --yes firebase-tools@latest deploy --only hosting --project bilgiliimedia-60d6f --non-interactive
+          npx --yes firebase-tools@latest deploy --only hosting --project bilgilimedia-60d6f --non-interactive
