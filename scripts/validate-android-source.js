@@ -165,6 +165,15 @@ requireAll(main, [
   'cardView.addView(tv(subtitle == null ? "" : subtitle, 12, secondary(), false))',
   'content.addView(menuCard(title, value, null))'
 ], "Golden menu-card helper");
+requireAll(main, [
+  'content.addView(menuCard("▣ Bildirim durumu", enabled ? "Açık" : "Kapalı"',
+  'if (index % 2 == 0)',
+  'new LinearLayout.LayoutParams(0, dp(44), 1f)',
+  'putBoolean("notify_categories_initialized", true)',
+  'Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.',
+  'Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.'
+], "Golden notification grid");
+if (main.includes("new CheckBox(this)")) throw new Error("Golden notification screen uses two-column pills, not CheckBox rows");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
