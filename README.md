@@ -34,4 +34,4 @@ Ayrıntılar için `EXTENSIBILITY.md` dosyasına bakın.
 
 ## Yayın
 
-Google Play üretim sürümünden önce `PLAY_RELEASE_CHECKLIST.md` kontrol edilmelidir.
+Google Play üretim sürümünden önce `PLAY_RELEASE_CHECKLIST.md` kontrol edilmelidir. Production Firebase uygulama kaydı ve güvenli build girdileri için `FIREBASE_PRODUCTION.md` dosyasına bakın.
