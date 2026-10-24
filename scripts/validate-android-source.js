@@ -228,7 +228,13 @@ requireAll(notificationSync, [
   'updateKnown(prefs, topic, true, "bağlı")',
   'updateKnown(prefs, topic, false, "kapalı")',
   '"topic_state_" + topic',
-  'IN_FLIGHT'
+  'IN_FLIGHT',
+  'KEY_SELECTED_IDS = "notify_category_ids"',
+  'KEY_SELECTED_IDS_INITIALIZED',
+  'ensureSelectionMigrated',
+  'persistSelection',
+  'selectedIds.contains(category.id)',
+  'category_name_id_map'
 ], "Reliable FCM topic-sync contract");
 if (notificationSync.includes('putStringSet("known_fcm_topics", new HashSet<>(desired))')) {
   throw new Error("FCM topics must not be marked subscribed before Firebase confirms success");
@@ -243,13 +249,18 @@ requireAll(notificationHelper, [
 
 requireAll(messaging, [
   'if (!NotificationHelper.canNotify(this)) return;',
-  'if (selectionInitialized && selected.isEmpty()) return;',
+  'String categoryId = value(data.get("category_id"))',
+  'NotificationSync.isCategorySelected(',
+  'legacyInitialized && selectedNames.isEmpty()',
   'if (!NotificationHelper.show(this, id, category, title, body)) return;'
 ], "FCM delivery preference contract");
 
 requireAll(job, [
   'if (!NotificationHelper.canNotify(this)) return;',
-  'if (selectionInitialized && selected.isEmpty()) return;',
+  'NotificationSync.selectedCategoryIds(this, snapshot.config)',
+  'if (selectedIds.isEmpty())',
+  'DataRepository.setKnownIds(this, now);',
+  'NotificationSync.isCategorySelected(',
   'executor.shutdownNow()',
   'task.cancel(true)'
 ], "Background notification job contract");
@@ -302,8 +313,10 @@ requireAll(main, [
   'private void markCurrentContentKnown()',
   'if (!master) markCurrentContentKnown();',
   'if (enablingFirstCategory) markCurrentContentKnown();',
-  'if(ok)markCurrentContentKnown();'
-], "Notification no-backfill contract");
+  'if(ok)markCurrentContentKnown();',
+  'NotificationSync.selectedCategoryIds(this, config)',
+  'NotificationSync.setCategorySelected('
+], "Notification no-backfill/stable-ID contract");
 const knownRefreshCount = (main.match(/markCurrentContentKnown\(\);/g) || []).length;
 if (knownRefreshCount < 4) {
   throw new Error("Foreground/re-enable notification baseline must be refreshed in every required path");
