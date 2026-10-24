@@ -30,7 +30,7 @@ function loadTopicMap() {
     if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(id)) {
       throw new Error("Invalid stable category id: " + id);
     }
-    if (!/^[a-zA-Z0-9._~%-]+$/.test(topic)) {
+    if (!/^[a-zA-Z0-9._~%-]{1,900}$/.test(topic)) {
       throw new Error("Invalid FCM topic name: " + topic);
     }
     if (Object.prototype.hasOwnProperty.call(byName, name)) {
@@ -52,7 +52,7 @@ function loadTopicMap() {
   return { byName, byId };
 }
 
-function readFeed(filePath, label) {
+function readFeed(filePath, label, requireCategoryId = false) {
   const feed = JSON.parse(fs.readFileSync(filePath, "utf8"));
   if (!feed || !Array.isArray(feed.articles)) {
     throw new Error("Invalid " + label + " feed");
@@ -66,6 +66,16 @@ function readFeed(filePath, label) {
 
     if (!id || !title || !category) {
       throw new Error(label + " feed contains an article missing id, title, or category");
+    }
+    if (requireCategoryId) {
+      const categoryId = String(article?.categoryId || "").trim();
+      if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(categoryId)) {
+        throw new Error(label + " feed contains an invalid categoryId: " + id);
+      }
+      const mapping = TOPICS.byId[categoryId];
+      if (!mapping || mapping.name !== category) {
+        throw new Error(label + " feed category/categoryId mismatch: " + id);
+      }
     }
     if (seenIds.has(id)) {
       throw new Error(label + " feed contains duplicate article id: " + id);
@@ -117,7 +127,7 @@ function createMessage(article) {
 }
 
 async function main() {
-  const feed = readFeed(FEED_PATH, "current");
+  const feed = readFeed(FEED_PATH, "current", true);
   const ids = feed.articles.map((article) => String(article.id));
 
   if (!PREVIOUS_FEED_PATH || !fs.existsSync(PREVIOUS_FEED_PATH)) {
