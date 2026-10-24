@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-24T16:05:00+03:00",
+  "categories": [
+    {"name":"Genel","topic":"genel","enabled":true},
+    {"name":"Belgesel","topic":"belgesel","enabled":true},
+    {"name":"Tarih","topic":"tarih","enabled":true},
+    {"name":"Doğa","topic":"doga","enabled":true},
+    {"name":"Yemek","topic":"yemek","enabled":true},
+    {"name":"Teknoloji","topic":"teknoloji","enabled":true},
+    {"name":"Animasyon","topic":"animasyon","enabled":true},
+    {"name":"Çizgi Film","topic":"cizgifilm","enabled":true}
+  ],
+  "extraPages": [],
+  "features": {
+    "notifications": true,
+    "history": true,
+    "saved": true,
+    "accounts": true
+  }
+}
