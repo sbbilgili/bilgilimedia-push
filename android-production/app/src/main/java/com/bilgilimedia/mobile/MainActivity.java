@@ -846,28 +846,51 @@ public class MainActivity extends Activity {
     private void renderSettings(){
         renderHeader(false);
         content.addView(tv("Ayarlar",27,text(),true));
-        TextView d=tv("Görünüm ve cihazında tutulan yerel verileri yönet.",14,secondary(),false);d.setPadding(0,dp(3),0,dp(12));content.addView(d);
+        content.addView(tv("Görünüm ve cihazında tutulan yerel verileri yönet.",14,secondary(),false));
+
         sectionTitle("Görünüm","Temanı seç");
-        String theme=prefs.getString("theme","system");
-        content.addView(chipRow(new String[]{"Sistem","Açık","Koyu"},themeLabel(theme),v->{String label=(String)v;String val="Sistem".equals(label)?"system":"Koyu".equals(label)?"dark":"light";prefs.edit().putString("theme",val).apply();recreate();}));
+        LinearLayout themeRow = new LinearLayout(this);
+        String currentTheme = prefs.getString("theme","system");
+        String[] labels = {"Sistem","Açık","Koyu"};
+        String[] values = {"system","light","dark"};
+        for (int i = 0; i < labels.length; i++) {
+            final String value = values[i];
+            TextView theme = pill(labels[i], currentTheme.equals(value));
+            theme.setOnClickListener(v -> {
+                prefs.edit().putString("theme", value).apply();
+                recreate();
+            });
+            themeRow.addView(theme);
+        }
+        content.addView(themeRow);
+
         sectionTitle("Bildirimler","Kategori bazlı bildirim tercihleri");
-        content.addView(menuCard("▣ Bildirim ayarları",notificationsAllowed()?"Açık":"Kapalı",()->showScreen("notifications")));
+        content.addView(menuCard("▣ Bildirim ayarları", notificationsAllowed() && prefs.getBoolean("notify_master",true) ? "Açık" : "Kapalı", () -> showScreen("notifications")));
+
         sectionTitle("Yerel veriler","Bu cihazda saklanan kişisel kullanım verileri");
-        int saved=countSavedArticles();int hist=historyIds().size();
-        content.addView(tv("Kaydedilenler: "+saved+" • Okuma geçmişi: "+hist+" kayıt",13,secondary(),false));
-        TextView clear=pill("Yerel kayıtları temizle",false);clear.setOnClickListener(v->confirm("Favoriler, geçmiş, tema ve yerel önbellek temizlensin mi?",this::clearLocalData));content.addView(clear);
+        content.addView(tv("Kaydedilenler: " + getStringSet("saved").size() + " • Okuma geçmişi: " + historyIds().size() + " kayıt",14,secondary(),false));
+
+        TextView clear = tv("Yerel kayıtları temizle",14,brand(),true);
+        clear.setPadding(0, dp(18), 0, dp(18));
+        clear.setOnClickListener(v -> confirm("Favoriler, geçmiş, tema ve yerel önbellek temizlensin mi?", this::clearLocalData));
+        content.addView(clear);
     }
 
     private void renderPrivacy(){
-        renderHeader(false);content.addView(tv("Gizlilik",27,text(),true));
-        addInfo("BilgiliMedia Android uygulamasında veri kullanımının özeti.","");
+        renderHeader(false);
+        content.addView(tv("Gizlilik",27,text(),true));
+        content.addView(tv("BilgiliMedia Android uygulamasında veri kullanımının özeti.",14,secondary(),false));
+
         sectionTitle("Cihazda tutulanlar","Yerel tercihler");
-        content.addView(tv("Kaydedilen içerikler, okuma geçmişi, son okunanlar, tema seçimi, bildirim tercihleri ve içerik önbelleği cihazında saklanabilir.",14,secondary(),false));
-        sectionTitle("Firebase Cloud Messaging","Bildirimler");
-        content.addView(tv("Bildirimleri açtığında Firebase Cloud Messaging, bildirimi bu uygulama kurulumuna ulaştırmak için bir kayıt tokenı ve gerekli teknik bilgileri işler.",14,secondary(),false));
-        sectionTitle("İzinler","Mevcut üretim adayı");
-        content.addView(tv("Uygulama internet erişimi ve Android sürümüne bağlı olarak bildirim izni kullanır. Konum, rehber, kamera, mikrofon, SMS veya genel depolama izni istemez.",14,secondary(),false));
-        TextView p=pill("↗ Gizlilik politikasını aç",true);p.setOnClickListener(v->openUrl(PRIVACY));content.addView(p);
+        content.addView(tv("Kaydedilen içerikler, okuma geçmişi, son okunanlar, tema seçimi, bildirim tercihleri ve içerik önbelleği cihazında saklanabilir.",14,text(),false));
+
+        sectionTitle("Bildirimler","Firebase Cloud Messaging");
+        content.addView(tv("Bildirimleri açtığında Firebase Cloud Messaging, bildirimi bu uygulama kurulumuna ulaştırmak için bir kayıt tokenı ve gerekli teknik bilgileri işler.",14,text(),false));
+
+        sectionTitle("İzinler","Mevcut önizleme sürümü");
+        content.addView(tv("Uygulama internet erişimi ve Android sürümüne bağlı olarak bildirim izni kullanır. Konum, rehber, kamera veya mikrofon izni istemez.",14,text(),false));
+
+        content.addView(menuCard("↗ Gizlilik politikasını aç","bilgilimedia-60d6f.web.app/privacy",() -> openUrl(PRIVACY)));
     }
 
     private void renderAbout(){
