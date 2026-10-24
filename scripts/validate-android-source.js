@@ -174,6 +174,13 @@ requireAll(main, [
   'Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.'
 ], "Golden notification grid");
 if (main.includes("new CheckBox(this)")) throw new Error("Golden notification screen uses two-column pills, not CheckBox rows");
+requireAll(main, [
+  'private String previousScreen = "home"',
+  'if ("article".equals(screen))',
+  'showScreen(previousScreen == null ? "home" : previousScreen)',
+  'showScreen("more")',
+  'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()'
+], "Golden back-navigation contract");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
