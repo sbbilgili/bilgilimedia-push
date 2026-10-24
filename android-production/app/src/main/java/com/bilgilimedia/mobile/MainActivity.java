@@ -748,23 +748,63 @@ public class MainActivity extends Activity {
     private void renderNotifications(){
         renderHeader(false);
         content.addView(tv("Bildirimler",27,text(),true));
-        TextView d=tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç. Teknik Firebase işlemleri arka planda otomatik yönetilir.",14,secondary(),false);d.setPadding(0,dp(3),0,dp(12));content.addView(d);
-        boolean master=prefs.getBoolean("notify_master",true);
-        LinearLayout status=panel();status.setPadding(dp(13),dp(11),dp(13),dp(11));
-        status.addView(tv("▣ Bildirim durumu",14,text(),true));
-        TextView state=pill(master&&notificationsAllowed()?"Açık":"Kapalı",master&&notificationsAllowed());
-        state.setOnClickListener(v->{ if(Build.VERSION.SDK_INT>=33&&!notificationsAllowed()){requestNotificationPermissionIfNeeded();return;} prefs.edit().putBoolean("notify_master",!master).apply();NotificationSync.sync(this,config);renderNotifications();});status.addView(state);
-        content.addView(status,margin(-1,-2,0,0,0,dp(12)));
+        content.addView(tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç. Teknik Firebase işlemleri arka planda otomatik yönetilir.",14,secondary(),false));
+
+        boolean master = prefs.getBoolean("notify_master", true);
+        boolean enabled = master && notificationsAllowed();
+        content.addView(menuCard("▣ Bildirim durumu", enabled ? "Açık" : "Kapalı", () -> {
+            if (Build.VERSION.SDK_INT >= 33 && !notificationsAllowed()) {
+                requestNotificationPermissionIfNeeded();
+                return;
+            }
+            prefs.edit().putBoolean("notify_master", !master).apply();
+            NotificationSync.sync(this, config);
+            renderNotifications();
+        }));
 
         sectionTitle("Kategoriler","İstediğin kategorileri açıp kapatabilirsin");
-        Set<String> selected=getNotifyCategories();
-        if(selected.isEmpty()) content.addView(tv("Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.",12,secondary(),false));
-        for(Models.Category c:config.categories){
-            CheckBox box=new CheckBox(this);box.setText(c.name);box.setTextColor(text());box.setTextSize(15);box.setChecked(selected.contains(c.name));
-            box.setOnCheckedChangeListener((b,checked)->{Set<String> s=getNotifyCategories();if(checked)s.add(c.name);else s.remove(c.name);prefs.edit().putStringSet("notify_categories",new HashSet<>(s)).putBoolean("notify_categories_initialized",true).apply();NotificationSync.sync(this,config);});
-            content.addView(box);
+
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        for (Models.Category category : config.categories) {
+            if (category.name != null && !category.name.isEmpty()) names.add(category.name);
         }
-        TextView auto=tv("Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.",12,secondary(),false);auto.setPadding(0,dp(8),0,0);content.addView(auto);
+        Set<String> selected = getNotifyCategories();
+
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout currentRow = null;
+        int index = 0;
+        for (String name : names) {
+            if (index % 2 == 0) {
+                currentRow = new LinearLayout(this);
+                grid.addView(currentRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            }
+            boolean checked = selected.contains(name);
+            TextView chip = pill(name, checked);
+            chip.setGravity(Gravity.CENTER);
+            chip.setOnClickListener(v -> {
+                Set<String> next = getNotifyCategories();
+                if (next.contains(name)) next.remove(name); else next.add(name);
+                prefs.edit()
+                        .putStringSet("notify_categories", new HashSet<>(next))
+                        .putBoolean("notify_categories_initialized", true)
+                        .apply();
+                NotificationSync.sync(this, config);
+                renderNotifications();
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(44), 1f);
+            currentRow.addView(chip, lp);
+            index++;
+        }
+        content.addView(grid);
+
+        if (selected.isEmpty()) {
+            TextView emptySelection = tv("Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.",12,secondary(),false);
+            emptySelection.setPadding(0, dp(8), 0, dp(8));
+            content.addView(emptySelection);
+        }
+
+        content.addView(tv("Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.",12,secondary(),false));
     }
 
     private void renderSettings(){
