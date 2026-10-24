@@ -55,6 +55,9 @@ requireAll(main, [
 
   'content.setPadding(dp(16), dp(10), dp(16), dp(24))',
   'bottomNav.setElevation(dp(12))',
+  'root.setOnApplyWindowInsetsListener',
+  'bottomNav.setPadding(0, dp(4), 0, dp(4) + bottomInset)',
+  'root.requestApplyInsets()',
   'item.setPadding(dp(2), dp(7), dp(2), dp(7))',
   '0xff2d1a1e',
   '0xffffecef',
