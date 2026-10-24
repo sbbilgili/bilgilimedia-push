@@ -311,6 +311,11 @@ requireAll(main, [
 ], "Image/lifecycle safety contract");
 
 requireAll(main, [
+  'private static final boolean SPONSOR_FEATURE_ENABLED = false;',
+  'if (!SPONSOR_FEATURE_ENABLED || !config.sponsorEnabled) return;'
+], "Play ads release-lock contract");
+
+requireAll(main, [
   'private void markCurrentContentKnown()',
   'if (!master) markCurrentContentKnown();',
   'if (enablingFirstCategory) markCurrentContentKnown();',
