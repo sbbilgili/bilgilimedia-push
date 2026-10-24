@@ -9,6 +9,7 @@ on:
       - "content/feed.json"
       - "hosting/app-config.json"
       - "package.json"
+      - "package-lock.json"
       - "scripts/check-feed.js"
       - ".github/workflows/automatic-push.yml"
 
@@ -44,7 +45,7 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install --omit=dev --no-audit --no-fund
+        run: npm ci --omit=dev --no-audit --no-fund
 
       - name: Verify FCM access without sending
         shell: bash
