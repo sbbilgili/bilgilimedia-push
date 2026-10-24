@@ -74,6 +74,9 @@ function createMessage(article) {
           "BilgiliMedia'da yeni içerik yayımlandı."
       ),
       content_type: article.videoUrl ? "video" : "article",
+      content_url:
+        "https://bilgilimedia-60d6f.web.app/content/" +
+        encodeURIComponent(String(article.id || "")),
     },
     android: {
       priority: "high",
