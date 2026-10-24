@@ -1,6 +1,6 @@
 {
   "project": "BilgiliMedia Android",
-  "archive_date": "2026-10-24",
+  "archive_date": "2026-10-25",
   "golden_apk": {
     "name": "BilgiliMedia_148_DIREKT.apk",
     "sha256": "dca81609a1df783de5606ee646af4bd672121aed0188a84886db1c0652ccae76",
@@ -28,7 +28,22 @@
         "branch": "exact-1-4-8-bytecode-recovery",
         "reason": "UI/behavior still differed; notification screen and Back behavior among mismatches"
       }
-    ]
+    ],
+    "final_candidate": {
+      "branch": "android-final-parity-1-4-8",
+      "pr": 22,
+      "package": "com.bilgilimedia.mobile",
+      "versionName": "1.4.9",
+      "versionCode": 23,
+      "status": "DRAFT_RELEASE_CANDIDATE",
+      "merge_requirements": [
+        "required validate check green on final head",
+        "Android lint/APK/AAB/artifact and 16 KB audit green on final head",
+        "CodeQL Java/Kotlin and JavaScript green on final head",
+        "physical golden 1.4.8 visual/behavior regression completed",
+        "final signing and Play App Signing continuity verified"
+      ]
+    }
   },
   "firebase": {
     "project_id": "bilgilimedia-60d6f",
@@ -38,5 +53,16 @@
     "preview_package": "com.bilgilimedia.mobile.media.preview",
     "preview_app_id": "1:190776938532:android:56fff2dc4359a7ac4788b1"
   },
-  "critical_note": "Exact original 1.4.8 native source recovery is not complete. Golden APK is authoritative. Do not use PR #16, #18 or #20 as final Android source. Package/Firebase/API/AAB changes must not alter the golden UI/behavior."
+  "critical_note": "Golden APK remains the visual/behavior authority. PR #22 is the only current final-source candidate; PR #16, #18 and #20 remain rejected references. Do not merge PR #22 until its final-head CI gates and physical golden 1.4.8 regression pass. Signing keys and passwords must remain outside Git.",
+  "controls": {
+    "golden_contract": "scripts/validate-android-source.js",
+    "content_contract": "scripts/validate-content.js",
+    "push_contract": "scripts/check-feed.js",
+    "required_ci": ".github/workflows/validate.yml",
+    "android_artifact_ci": ".github/workflows/android-production-build.yml",
+    "codeql": ".github/workflows/codeql.yml",
+    "local_signing": "scripts/sign-android-aab.sh",
+    "release_checklist": "PLAY_RELEASE_CHECKLIST.md",
+    "open_blockers": "PLAY_BLOCKERS_CURRENT.md"
+  }
 }
