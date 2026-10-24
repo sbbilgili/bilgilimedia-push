@@ -1,6 +1,6 @@
 # BilgiliMedia — Google Play yayın kontrol listesi
 
-Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın öncesi kontrol kapısıdır.
+Bu dosya 1.4.8 golden referansını ve production 1.4.9 release adayını kapsayan yayın kapısıdır. **PR #22 final CI + fiziksel golden regresyon tamamlanmadan `main`e merge/release yapılmaz.**
 
 ## 1. Altın referans / arayüz
 
@@ -8,113 +8,135 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 - [x] Referans SHA-256: `dca81609a1df783de5606ee646af4bd672121aed0188a84886db1c0652ccae76`.
 - [x] Preview paket: `com.bilgilimedia.mobile.media.preview`.
 - [x] Preview imza sertifikası App Links kaydıyla eşleşiyor.
-- [ ] Orijinal arayüzün yeniden üretilebilir native kaynak projesi kurtarıldı/yeniden oluşturuldu.
-- [ ] Final Play build'i bu altın referansla görsel ve işlevsel regresyon testinden geçti.
+- [x] Yeniden üretilebilir native production kaynak adayı PR #22 altında oluşturuldu.
+- [x] Golden ekran/renk/metin/back davranışı kaynak sözleşmesi CI validator'a bağlandı.
+- [ ] Final Play build'i 1.4.8 golden ile gerçek cihazda görsel ve işlevsel regresyon testinden geçti.
 
 ## 2. Android build / Play AAB
 
-- [x] Üretim package name kararı: `com.bilgilimedia.mobile`.
-- [x] Production sürüm politikası: final AAB versionCode `23` veya daha yüksek olacak.
-- [x] Referans hedef: API 36; 31 Ağustos 2026 itibarıyla yeni Play uygulamaları için minimum gereklilik API 36.
-- [x] minSdk: API 26 kararı korunuyor.
-- [ ] Google Play için **AAB** üretildi; APK yalnız cihaz QA'sı için kullanılıyor.
-- [ ] Release AAB üretim/upload anahtarıyla imzalandı.
-- [x] Referans APK'da gereksiz hassas izin bulunmuyor.
-- [x] Referans APK'da cleartext HTTP kapalı ve `allowBackup=false`.
-- [x] Referans APK v2 + v3 APK signature block içeriyor.
-- [x] Referans APK'daki native `.so` kütüphaneleri 16 KB ELF hizasına sahip.
-- [x] Referans APK'da uncompressed native kütüphaneler ZIP içinde 16 KB hizalı.
-- [ ] Final AAB/Play-generated APK seti 16 KB page-size kontrolünden geçti.
-- [ ] Final AAB bundletool/Play Console pre-launch raporu ile doğrulandı.
+- [x] Production package: `com.bilgilimedia.mobile`.
+- [x] Release adayı: versionCode `23`, versionName `1.4.9`.
+- [x] compileSdk/targetSdk: 36.
+- [x] minSdk: 26.
+- [x] CI Android lint + debug/release APK + release AAB üretimini zorunlu kılıyor.
+- [x] CI package/version/minSdk/targetSdk değerlerini artifact üzerinde doğruluyor.
+- [x] CI APK ZIP bütünlüğünü ve `zipalign -P 16` kontrolünü yapıyor.
+- [x] CI AAB'de `PAGE_ALIGNMENT_16K` kontrolünü bundletool ile yapacak şekilde sabitlendi.
+- [x] CI arm64-v8a/x86_64 ELF LOAD ve GNU_RELRO hizasını Android NDK LLVM araçlarıyla denetliyor.
+- [ ] PR #22 **final head** Android artifact audit'i tamamen yeşil.
+- [ ] Final AAB upload/production anahtarıyla imzalandı.
+- [ ] Final AAB/Play-generated APK seti 16 KB page-size emulator/device veya Play raporuyla da doğrulandı.
 
 ## 3. Firebase / bildirim
 
-- [x] Firebase Console'da production paket `com.bilgilimedia.mobile` Android uygulaması kayıtlı.
-- [x] Production `google-services.json` Firebase Console'dan indirildi ve production paket kaydı doğrulandı.\n- [ ] Production `google-services.json` final kaynak projeye entegre edildi; preview dosyası production build'de kullanılmıyor.
+- [x] Firebase Console'da production paket `com.bilgilimedia.mobile` kayıtlı.
+- [x] Production Firebase app/project/sender yapılandırması final Android kaynakta kullanılıyor; preview Firebase kimliği production build'de kullanılmıyor.
 - [x] Backend FCM gönderimi OIDC/WIF ile anahtarsız çalışıyor.
-- [x] FCM erişimi dry-run ile doğrulanıyor.
+- [x] FCM payload `category_id` taşıyor.
+- [x] FCM topic subscribe/unsubscribe yalnız Firebase başarı sonucundan sonra local state'e yazılıyor.
+- [x] Hızlı tercih değişimlerinde son kullanıcı isteğine geri yakınsama mantığı var.
+- [x] Kategori tercihleri görünen ada değil stable category ID'ye migrate edildi.
+- [x] Feed'deki mevcut içerikler stable `categoryId` ile migrate edildi.
+- [x] Explicit boş kategori seçimi “tüm kategoriler” olarak yorumlanmıyor.
+- [x] Bildirim gerçekten gösterilmediyse içerik “bildirildi” sayılmıyor.
 - [ ] Android 13+ bildirim izni gerçek cihazda test edildi.
-- [ ] FCM token yenileme, topic subscribe/unsubscribe gerçek cihazda test edildi.
-- [ ] AI/HIGGS dahil uzaktan kategori ekleme testi yapıldı.
-- [ ] Cihaz yeniden başlatma ve uygulama güncellemesi sonrası topic/iş kontrolü test edildi.
+- [ ] FCM token yenileme/topic subscribe-unsubscribe gerçek cihazda test edildi.
+- [ ] AI/HIGGS dahil uzaktan kategori ekleme/yeniden adlandırma testi yapıldı.
+- [ ] Reboot/update sonrası job/topic testi yapıldı.
 
-## 4. App Links
+## 4. Remote content / cache / genişletilebilirlik
 
-- [x] Preview `assetlinks.json` kaydı mevcut ve preview sertifikasıyla eşleşiyor.
-- [x] `assetlinks.json` production paket `com.bilgilimedia.mobile` için mevcut production sertifikasıyla kayıt içeriyor.
-- [ ] Production SHA-256 değeri Play Console > App integrity > **App signing certificate** ile birebir eşleşiyor.
-- [ ] Play App Signing birden fazla dağıtım sertifikası gösteriyorsa gerekli tüm fingerprint'ler API sağlayıcılarında ve assetlinks'te kaydedildi.
-- [ ] App Link ile içerik açma ve tarayıcı fallback gerçek cihazda test edildi.
+- [x] Feed/config yalnız HTTPS ve BilgiliMedia trusted host üzerinden alınıyor.
+- [x] Redirect, boyut sınırı ve JSON/şema doğrulama kontrolleri var.
+- [x] Feed + config tek mantıksal snapshot olarak birlikte doğrulanmadan cache'e yazılmıyor.
+- [x] Bozuk/uyumsuz remote veri last-known-good cache -> local prefs -> bundled fallback sırasıyla güvenli biçimde ele alınıyor.
+- [x] Cache yazımı `AtomicFile` ile korunuyor.
+- [x] Schema v2 navigation depth/item count ve referansları bounded/strict.
+- [x] Remote navigation hidden developer ekranını açamıyor.
+- [x] Server validator ve Android parser kategori/page/navigation sözleşmeleri hizalandı.
+- [x] Yeni içeriklerde stable `categoryId` repository validator tarafından zorunlu.
+- [ ] Remote malformed/mismatched feed-config gerçek cihaz ağ senaryosunda test edildi.
 
-## 5. İmza ve güncelleme sürekliliği
+## 5. App Links
 
-- [x] Mevcut üretim imza yedeğinin sertifikası doğrulandı: `F6:84:6E:CB:EC:19:CC:99:DB:68:2A:37:4F:47:8F:D1:9B:59:E6:96:54:2E:C5:0F:16:B5:33:0E:DD:DF:CF:6A`.
-- [x] Eski production AAB'nin sertifikası aynı fingerprint ile eşleşiyor.
-- [ ] Google Play App Signing ilk release'ten önce mevcut production app signing key'i kullanacak şekilde yapılandırıldı; böylece sideload edilmiş eski `com.bilgilimedia.mobile` kurulumlarıyla imza sürekliliği korunuyor.
-- [ ] App signing key ile upload key ayrıldı ve upload key yedeği güvenli yerde tutuluyor.
-- [x] Özel anahtar/parola GitHub veya herkese açık dosyalara eklenmedi.
+- [x] Preview `assetlinks.json` kaydı mevcut.
+- [x] Production paket `com.bilgilimedia.mobile` için mevcut production sertifikası kaydı mevcut.
+- [ ] Play Console > App integrity > **App signing certificate** SHA-256 ile production `assetlinks.json` birebir karşılaştırıldı.
+- [ ] Gerekirse birden fazla dağıtım fingerprint'i eklendi.
+- [ ] App Link -> doğru içerik ve tarayıcı fallback gerçek cihazda test edildi.
 
-## 6. Gizlilik / Data Safety
+## 6. İmza ve güncelleme sürekliliği
 
-- [x] Herkese açık gizlilik politikası güncel.
-- [x] Gizlilik metni FCM/Firebase Installations FID kullanımını açıklıyor.
-- [x] Gizlilik metni Firebase Hosting standart ağ/IP işleme bilgisini açıklıyor.
-- [x] Gizlilik metni normal Android arka plan izinlerini açıklıyor.
-- [x] Referans APK'da Analytics, Crashlytics ve AdMob yok.
-- [ ] Final Play Data Safety formunda **Device or other IDs** (FID) toplama beyan edildi.
-- [ ] Amaç final formda uygulama işlevselliğiyle uyumlu seçildi.
-- [ ] Firebase hizmet sağlayıcı istisnasına göre “sharing” cevabı final form metniyle doğrulandı.
-- [ ] “Data encrypted in transit” final AAB ve form metniyle doğrulandı.
-- [x] Uygulamada kullanıcı hesabı yok; account-deletion zorunluluğu mevcut davranışta uygulanmıyor.
-- [x] Sponsor reklam sistemi kapalı.
-- [ ] Sponsor sistemi açılmadan önce Contains ads + privacy + Data Safety yeniden güncellenecek.
+- [x] Mevcut üretim imza yedeği sertifika SHA-256: `F6:84:6E:CB:EC:19:CC:99:DB:68:2A:37:4F:47:8F:D1:9B:59:E6:96:54:2E:C5:0F:16:B5:33:0E:DD:DF:CF:6A`.
+- [x] Özel anahtar/parola GitHub'a eklenmedi.
+- [x] Root `.gitignore` keystore/PKCS#12/service-account materyalini engelliyor.
+- [x] CI tracked signing/private-key materyalini reddediyor.
+- [x] `scripts/sign-android-aab.sh` environment tabanlı secret-safe signing + strict verify + opsiyonel cert SHA-256 gate sağlıyor.
+- [ ] Play App Signing mevcut production imza sürekliliği gözetilerek yapılandırıldı.
+- [ ] Upload key/app signing key ayrımı Play Console'da finalleştirildi.
+- [ ] Final upload-signed AAB üretildi ve SHA-256 kaydedildi.
 
-## 7. Play Console / geliştirici hesabı
+## 7. Gizlilik / Data Safety / reklam
 
-- [ ] Geliştirici kimlik doğrulaması tamamlandı. (Kimlik belgesi bekleniyor.)
-- [ ] `com.bilgilimedia.mobile` Play package adı 30 Eylül 2026 sonrası paket kayıt gerekliliklerine göre Play Console'da kayıtlı/doğrulanmış görünüyor.
-- [ ] Uygulama oluşturma ekranında doğru uygulama adı, varsayılan dil ve uygulama türü seçildi.
-- [ ] Uygulama erişimi: giriş gerekmiyor şeklinde beyan edildi.
-- [ ] Reklam beyanı: sponsorAds kapalı olduğu sürece “No”.
-- [ ] İçerik derecelendirme IARC anketi gerçek final içerik üzerinden tamamlandı.
-- [ ] Hedef kitle gerçek ürün kararıyla dolduruldu.
-- [ ] Haber uygulaması olmadığı beyanı gerçek ürün davranışıyla uyumlu.
-- [ ] Yeni kişisel geliştirici hesabı kuralına tabi olunuyorsa 12 tester / 14 kesintisiz gün kapalı test tamamlandı.
+- [x] Public privacy policy güncel.
+- [x] FCM/Firebase Installations ve Firebase Hosting teknik işleme açıklanıyor.
+- [x] Konum/kamera/mikrofon/rehber/SMS/genel depolama izni yok.
+- [x] Analytics, Crashlytics ve AdMob yok.
+- [x] Sponsor sistemi `SPONSOR_FEATURE_ENABLED=false` + `sponsorAds.enabled=false` ile çift kilitli.
+- [x] Repository validator mevcut release'te uzaktan sponsor açılmasını reddediyor.
+- [ ] Play Data Safety final formu final AAB davranışıyla birebir dolduruldu.
+- [ ] Device or other IDs / amaç / sharing / encryption seçenekleri Play Console'un güncel metniyle doğrulandı.
+- [ ] Privacy URL Play Console'a girildi.
+- [ ] Sponsor ileride açılmadan önce Contains ads + privacy + Data Safety güncellendi.
 
-## 8. Mağaza varlıkları
+## 8. Play Console / geliştirici hesabı
 
-- [x] 512×512 uygulama simgesi mevcut; final marka görseliyle yeniden doğrulanacak.
-- [x] 1024×500 feature graphic mevcut; final marka mesajıyla yeniden doğrulanacak.
-- [ ] Ekran görüntüleri **final production build** üzerinden yeniden çekildi.
-- [ ] Eski 1.1.x ekran görüntüleri kullanılmıyor.
-- [x] Güncel Türkçe mağaza metni repoya eklendi.
-- [ ] Destek e-postası ve gizlilik URL'si Play Console'a girildi.
-- [ ] Mağaza açıklaması final kategori/özelliklerle birebir eşleşiyor.
+- [ ] Geliştirici kimlik doğrulaması tamamlandı. **Kimlik belgesi bekleniyor.**
+- [ ] `com.bilgilimedia.mobile` paket kaydı/doğrulaması tamamlandı.
+- [ ] App access doğru beyan edildi.
+- [ ] Ads declaration mevcut locked release ile uyumlu dolduruldu.
+- [ ] IARC içerik derecelendirme tamamlandı.
+- [ ] Hedef kitle tamamlandı.
+- [ ] News declaration tamamlandı.
+- [ ] Hesap türüne göre gerekiyorsa kapalı test/production access şartı tamamlandı.
 
-## 9. Fiziksel cihaz QA
+## 9. Mağaza varlıkları
+
+- [x] 512×512 ikon mevcut.
+- [x] 1024×500 feature graphic mevcut.
+- [x] Türkçe store listing metni mevcut.
+- [x] Support email ve privacy URL hazır.
+- [ ] Ekran görüntüleri final production build'den yeniden çekildi.
+- [ ] Store metni final kategori/özellik setiyle son kez karşılaştırıldı.
+
+## 10. Fiziksel cihaz QA
 
 - [ ] Temiz kurulum.
-- [ ] Eski `com.bilgilimedia.mobile` sürümünün üzerine güncelleme.
-- [ ] Android 8/9 veya desteklenen en eski API 26 cihaz/emülatör testi.
-- [ ] Android 13+ bildirim izin testi.
-- [ ] Android 16 / API 36 cihaz veya emülatör testi.
-- [ ] 16 KB page-size ortamında test.
-- [ ] Wi-Fi / mobil ağ / bağlantısız / yavaş ağ senaryoları.
-- [ ] Geri tuşu, yeniden açma ve ekran döndürme.
-- [ ] Büyük yazı boyutu ve erişilebilirlik.
-- [ ] Favoriler, son okunanlar, tema ve bildirim tercihlerinin güncellemede korunması.
-- [ ] Sosyal bağlantı uygulama varsa app'e, yoksa HTTPS fallback'e gidiyor.
-- [ ] App Links doğru içeriği açıyor.
-- [ ] AI/HIGGS ve yeni uzaktan kategoriler menü/bildirim tarafında doğrulanıyor.
+- [ ] Eski `com.bilgilimedia.mobile` üzerine güncelleme.
+- [ ] API 26.
+- [ ] Android 13+ notification permission.
+- [ ] Android 16 / API 36.
+- [ ] 16 KB page-size ortamı.
+- [ ] Wi-Fi / mobil / offline / yavaş ağ.
+- [ ] Geri tuşu + gesture back + ana sayfada kapanmama.
+- [ ] Yeniden açma + rotation.
+- [ ] Büyük font / erişilebilirlik.
+- [ ] Favoriler/geçmiş/tema/bildirim tercihleri update sonrası korunuyor.
+- [ ] Sosyal link app/browser fallback.
+- [ ] App Links.
+- [ ] Remote yeni kategori/rename/topic değişimi.
+- [ ] Remote bozuk feed/config güvenli fallback.
 
-## 10. Altyapı güvenliği
+## 11. CI / kaynak güvenliği
 
-- [x] GitHub -> Google Cloud anahtarsız OIDC/WIF.
-- [x] Eski `FIREBASE_SERVICE_ACCOUNT` secret kaldırıldı.
-- [x] Eski kullanıcı tarafından yönetilen servis hesabı JSON anahtarı kaldırıldı.
-- [x] GitHub Actions bağımlılıkları tam commit SHA'larına sabitlendi.
-- [x] `package-lock.json` + `npm ci`.
-- [x] Hosting CSP ve temel güvenlik başlıkları.
-- [x] GitHub `main` ruleset aktif.
-- [x] PR zorunlu + `validate` status check zorunlu.
+- [x] `main` protected; PR zorunlu.
+- [x] Required `validate` status check.
 - [x] Force push ve branch silme engelli.
+- [x] Required validate Android release Java'yı gerçek derliyor.
+- [x] Android workflow lint + APK/AAB + artifact identity + 16 KB denetliyor.
+- [x] CodeQL Java/Kotlin + JavaScript.
+- [x] Dependabot npm + Gradle.
+- [x] GitHub Actions bağımlılıkları commit SHA'larına pinli.
+- [x] `package-lock.json` + `npm ci`.
+- [x] Google Cloud OIDC/WIF; service account JSON key yok.
+- [x] Hosting CSP ve temel güvenlik başlıkları.
