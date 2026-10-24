@@ -1102,17 +1102,96 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void loadImage(String url,ImageView view,TextView fallback){
-        io.execute(()->{
-            try{
-                File dir=new File(getCacheDir(),"covers");dir.mkdirs();File f=new File(dir,sha(url)+".img");
-                if(!f.exists()){
-                    URL u=new URL(url);if(!"https".equalsIgnoreCase(u.getProtocol()))return;HttpURLConnection c=(HttpURLConnection)u.openConnection();c.setConnectTimeout(7000);c.setReadTimeout(9000);c.setRequestProperty("User-Agent","BilgiliMedia/1.4.9");
-                    if(c.getResponseCode()>=200&&c.getResponseCode()<300){try(java.io.InputStream in=c.getInputStream();FileOutputStream out=new FileOutputStream(f)){byte[] buf=new byte[8192];int n,total=0;while((n=in.read(buf))>0){total+=n;if(total>4_000_000)throw new IllegalStateException("image too large");out.write(buf,0,n);}}}else return;c.disconnect();
+    private void loadImage(String url, ImageView view, TextView fallback) {
+        io.execute(() -> {
+            try {
+                File dir = new File(getCacheDir(), "covers");
+                if (!dir.exists() && !dir.mkdirs()) return;
+
+                File file = new File(dir, sha(url) + ".img");
+                if (!file.exists()) {
+                    URL source = new URL(url);
+                    if (!"https".equalsIgnoreCase(source.getProtocol())) return;
+
+                    HttpURLConnection connection =
+                            (HttpURLConnection) source.openConnection();
+                    connection.setConnectTimeout(7000);
+                    connection.setReadTimeout(9000);
+                    connection.setRequestProperty("User-Agent", "BilgiliMedia/1.4.9");
+
+                    File temp = new File(dir, sha(url) + ".tmp");
+                    try {
+                        int status = connection.getResponseCode();
+                        if (status < 200 || status >= 300) return;
+                        if (!"https".equalsIgnoreCase(connection.getURL().getProtocol())) return;
+
+                        String contentType = connection.getContentType();
+                        if (contentType != null
+                                && !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+                            return;
+                        }
+
+                        long announced = connection.getContentLengthLong();
+                        if (announced > 4_000_000L) return;
+
+                        try (java.io.InputStream in = connection.getInputStream();
+                             FileOutputStream out = new FileOutputStream(temp)) {
+                            byte[] buffer = new byte[8192];
+                            int read;
+                            int total = 0;
+                            while ((read = in.read(buffer)) > 0) {
+                                total += read;
+                                if (total > 4_000_000) {
+                                    throw new IllegalStateException("image too large");
+                                }
+                                out.write(buffer, 0, read);
+                            }
+                            out.flush();
+                        }
+
+                        if (!temp.renameTo(file)) {
+                            temp.delete();
+                            return;
+                        }
+                    } finally {
+                        connection.disconnect();
+                        if (temp.exists() && !file.exists()) temp.delete();
+                    }
                 }
-                Bitmap b=BitmapFactory.decodeFile(f.getAbsolutePath());if(b!=null)runOnUiThread(()->{view.setImageBitmap(b);view.animate().alpha(1f).setDuration(180).start();if (fallback != null) fallback.setVisibility(View.GONE);});
-            }catch(Exception ignored){}
+
+                Bitmap bitmap = decodeCoverSafely(file);
+                if (bitmap == null) {
+                    file.delete();
+                    return;
+                }
+
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    view.setImageBitmap(bitmap);
+                    view.animate().alpha(1f).setDuration(180).start();
+                    if (fallback != null) fallback.setVisibility(View.GONE);
+                });
+            } catch (Exception ignored) {
+                // Image failure must never break article/content rendering.
+            }
         });
+    }
+
+    private Bitmap decodeCoverSafely(File file) {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.getAbsolutePath(), bounds);
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+
+        int sampleSize = 1;
+        while (bounds.outWidth / sampleSize > 1600
+                || bounds.outHeight / sampleSize > 1600) {
+            sampleSize *= 2;
+        }
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = sampleSize;
+        return BitmapFactory.decodeFile(file.getAbsolutePath(), options);
     }
 
     private GradientDrawable gradientFor(String category){
@@ -1198,6 +1277,12 @@ public class MainActivity extends Activity {
     }
     private void openUrl(String url){try{Uri u=Uri.parse(url);if(!"https".equalsIgnoreCase(u.getScheme()))throw new IllegalArgumentException();Intent i=new Intent(Intent.ACTION_VIEW,u);i.addCategory(Intent.CATEGORY_BROWSABLE);startActivity(i);}catch(Exception e){Toast.makeText(this,"Bağlantı açılamadı",Toast.LENGTH_SHORT).show();}}
     private String host(String url){try{String h=Uri.parse(url).getHost();if(h==null)return "";return h.startsWith("www.")?h.substring(4):h;}catch(Exception e){return "";}}
+
+    @Override
+    protected void onDestroy() {
+        io.shutdownNow();
+        super.onDestroy();
+    }
 
     private void requestNotificationPermissionIfNeeded(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIFICATION);}
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_NOTIFICATION){boolean ok=grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED;prefs.edit().putBoolean("notify_master",ok).apply();NotificationSync.sync(this,config);Toast.makeText(this,ok?"Bildirim izni verildi":"Bildirim izni verilmedi",Toast.LENGTH_SHORT).show();}}
