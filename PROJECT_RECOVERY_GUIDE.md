@@ -48,9 +48,11 @@ Bu APK ChatGPT Library'de:
 ÇOK ÖNEMLİ:
 - Orijinal 1.4.8 native kaynak projesi henüz birebir geri kazanılmış değildir.
 - Bu APK + `GOLDEN_UI_1_4_8.md` birlikte altın referanstır.
-- `android-production-rebuild-1-4-9` dalındaki QA yeniden yapımı görsel olarak reddedildi.
-- PR #18 kapalıdır ve merge edilmemiştir.
-- Bu dal final arayüz kaynağı olarak kullanılmamalıdır.
+- PR #16 (`production-android-source`) cihaz karşılaştırmasında reddedildi.
+- PR #18 (`android-production-rebuild-1-4-9`) cihaz karşılaştırmasında reddedildi.
+- PR #20 (`exact-1-4-8-bytecode-recovery`) cihaz karşılaştırmasında reddedildi; bildirim ekranı, geri tuşu ve başka UI/behavior farkları vardı.
+- Bu üç PR kapalıdır, merge edilmemiştir ve final Android kaynak olarak kullanılmamalıdır.
+- Paket adı, Firebase, API seviyesi, imza veya AAB gereksinimleri UI/UX değişikliği gerektirmez. Gelecek production build, golden 1.4.8'in görünümünü ve davranışını değiştirmemelidir.
 
 ## Firebase
 
@@ -109,7 +111,7 @@ Bu özel dosya Library'de tutulur. GitHub'a, README'ye veya public dosyalara pri
 
 ## Sohbet kaybolursa yeni sohbette kullanılacak mesaj
 
-> BilgiliMedia projemize devam edeceğiz. GitHub repository `sbbilgili/bilgilimedia-push`. Önce `PROJECT_RECOVERY_GUIDE.md`, `GOLDEN_UI_1_4_8.md`, `PLAY_BLOCKERS_CURRENT.md` ve `PLAY_RELEASE_CHECKLIST.md` dosyalarını incele. ChatGPT Library'deki `/BilgiliMedia/Recovery_2026-10-24/BilgiliMedia_148_DIREKT.apk` orijinal arayüzün altın referansıdır. `android-production-rebuild-1-4-9` dalını final kaynak olarak kullanma; PR #18 reddedilmiş QA denemesidir.
+> BilgiliMedia projemize devam edeceğiz. GitHub repository `sbbilgili/bilgilimedia-push`. Önce `PROJECT_RECOVERY_GUIDE.md`, `GOLDEN_UI_1_4_8.md`, `PLAY_BLOCKERS_CURRENT.md` ve `PLAY_RELEASE_CHECKLIST.md` dosyalarını incele. ChatGPT Library'deki `/BilgiliMedia/Recovery_2026-10-24/BilgiliMedia_148_DIREKT.apk` orijinal arayüzün altın referansıdır. PR #16, #18 ve #20'yi final kaynak olarak kullanma; üçü de cihaz karşılaştırmasında reddedilmiş yeniden-yapım denemeleridir.
 
 ## Yedek stratejisi
 
