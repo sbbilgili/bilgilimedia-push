@@ -119,22 +119,45 @@ public class MainActivity extends Activity {
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(bg());
+        setContentView(root);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(dp(16), dp(9), dp(12), dp(8));
+        header.setBackgroundColor(card());
+
+        TextView play = tv("▶", 18, Color.WHITE, true);
+        play.setGravity(Gravity.CENTER);
+        play.setBackground(round(brand(), 16));
+        header.addView(play, new LinearLayout.LayoutParams(dp(42), dp(42)));
+
+        LinearLayout brandBox = new LinearLayout(this);
+        brandBox.setOrientation(LinearLayout.VERTICAL);
+        brandBox.setPadding(dp(10), 0, 0, 0);
+        brandBox.addView(tv("BilgiliMedia", 21, text(), true));
+        brandBox.addView(tv("Bilgi • Keşif • Medya", 11, secondary(), false));
+        header.addView(brandBox, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView external = tv("↗", 24, text(), true);
+        external.setGravity(Gravity.CENTER);
+        external.setOnClickListener(v -> openUrl(WEB));
+        header.addView(external, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        root.addView(header);
 
         scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(16), dp(10), dp(16), dp(26));
+        content.setPadding(dp(16), dp(10), dp(16), dp(24));
         scroll.addView(content);
         root.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         bottomNav = new LinearLayout(this);
         bottomNav.setOrientation(LinearLayout.HORIZONTAL);
         bottomNav.setGravity(Gravity.CENTER);
-        bottomNav.setPadding(dp(4), dp(5), dp(4), dp(5));
         bottomNav.setBackgroundColor(card());
-        root.addView(bottomNav, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(68)));
-        setContentView(root);
+        bottomNav.setElevation(dp(12));
+        root.addView(bottomNav, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         renderBottomNav();
         styleSystemBars();
     }
@@ -218,19 +241,24 @@ public class MainActivity extends Activity {
         LinearLayout item = new LinearLayout(this);
         item.setOrientation(LinearLayout.VERTICAL);
         item.setGravity(Gravity.CENTER);
-        item.setPadding(dp(3), dp(2), dp(3), dp(2));
+        item.setPadding(dp(2), dp(7), dp(2), dp(7));
         item.setClickable(true);
         item.setFocusable(true);
         item.setContentDescription(label);
-        TextView i = tv(icon, 20, selected ? brand() : secondary(), true);
-        i.setGravity(Gravity.CENTER);
-        item.addView(i, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-        TextView l = tv(label, 11, selected ? brand() : secondary(), selected);
-        l.setGravity(Gravity.CENTER);
-        l.setMaxLines(1);
-        item.addView(l);
+        item.setBackgroundColor(selected ? (dark ? 0xff2d1a1e : 0xffffecef) : Color.TRANSPARENT);
+
+        TextView iconView = tv(icon, 24, selected ? brand() : secondary(), true);
+        iconView.setGravity(Gravity.CENTER);
+        item.addView(iconView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(30)));
+
+        TextView labelView = tv(label, 13.5f, selected ? brand() : text(), selected);
+        labelView.setGravity(Gravity.CENTER);
+        labelView.setMaxLines(1);
+        labelView.setEllipsize(TextUtils.TruncateAt.END);
+        item.addView(labelView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(29)));
+
         item.setOnClickListener(v -> showScreen(target));
-        bottomNav.addView(item, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+        bottomNav.addView(item, new LinearLayout.LayoutParams(0, dp(76), 1f));
     }
 
     private boolean isMoreSubscreen(String value) {
@@ -239,67 +267,76 @@ public class MainActivity extends Activity {
     }
 
     private void renderHeader(boolean refresh) {
-        LinearLayout row = new LinearLayout(this);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        TextView brandTitle = tv("BİLGİLİMEDIA", 24, text(), true);
-        row.addView(brandTitle, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        if (refresh) {
-            TextView live = pill("Canlı", true);
-            row.addView(live);
-            TextView r = pill("↻ Yenile", false);
-            r.setOnClickListener(v -> load(true));
-            row.addView(r);
-        }
-        content.addView(row);
+        if (!refresh) return;
+        TextView brandTitle = tv("BİLGİLİMEDIA", 11, brand(), true);
+        brandTitle.setPadding(0, 4, 0, 4);
+        content.addView(brandTitle);
     }
 
     private void renderHome() {
         renderHeader(true);
-        TextView hello = tv("Bugün ne keşfetmek istersin?", 23, text(), true);
-        hello.setPadding(0, dp(12), 0, dp(3));
-        content.addView(hello);
+        content.addView(tv("Bugün ne keşfetmek istersin?", 28, text(), true));
         TextView sub = tv("Güncel kısa okumalar, popüler içerikler ve tüm BilgiliMedia hesapları tek uygulamada.", 14, secondary(), false);
-        sub.setPadding(0, 0, 0, dp(12));
+        sub.setPadding(0, 4, 0, dp(8));
         content.addView(sub);
-        content.addView(categoryRail(false));
 
+        LinearLayout statusRow = new LinearLayout(this);
+        statusRow.setGravity(Gravity.CENTER_VERTICAL);
+        String statusText = loading ? "Güncelleniyor…" : "Canlı";
+        TextView live = tv(statusText, 12, statusText.startsWith("Canlı") ? 0xff1f8b4c : secondary(), true);
+        statusRow.addView(live, new LinearLayout.LayoutParams(0, dp(38), 1f));
+        TextView refresh = pill("↻ Yenile", false);
+        refresh.setOnClickListener(v -> load(true));
+        statusRow.addView(refresh);
+        content.addView(statusRow);
+
+        sectionTitle("Öne Çıkan", "Editör seçimi");
         Models.Article featured = featuredArticle();
-        if (featured != null) {
-            sectionTitle("Öne Çıkan", "Editör seçimi");
-            content.addView(featuredCard(featured));
-        }
+        if (featured != null) content.addView(featuredCard(featured));
         renderSponsor("home_after_featured");
+
+        LinkedHashSet<String> categoryNames = new LinkedHashSet<>();
+        for (Models.Article a : articles) categoryNames.add(a.category);
+        LinearLayout categoryRow = new LinearLayout(this);
+        for (String name : categoryNames) {
+            TextView category = pill(name, false);
+            category.setOnClickListener(v -> { categoryFilter = name; showScreen("home"); });
+            categoryRow.addView(category);
+        }
+        HorizontalScrollView categoryScroll = new HorizontalScrollView(this);
+        categoryScroll.setHorizontalScrollBarEnabled(false);
+        categoryScroll.addView(categoryRow);
+        content.addView(categoryScroll);
 
         List<Models.Article> newest = new ArrayList<>(articles);
         Collections.reverse(newest);
         sectionTitle("Yeni Eklenenler", "Canlı akıştaki son içerikler");
-        content.addView(horizontalArticles(limit(newest, 8)));
+        content.addView(horizontalArticles(limit(newest, 6)));
 
         List<Models.Article> recent = historyArticles();
         if (!recent.isEmpty()) {
             sectionTitle("Son Okunanlar", "Kaldığın yerden devam et");
-            content.addView(horizontalArticles(limit(recent, 8)));
+            content.addView(horizontalArticles(limit(recent, 6)));
         }
 
         List<Models.Article> popular = new ArrayList<>(articles);
         popular.sort((a,b) -> Integer.compare(readCount(b.id), readCount(a.id)));
         sectionTitle("En Çok Okunanlar", "Bu cihazdaki okuma sayılarına göre");
-        content.addView(horizontalArticles(limit(popular, 8)));
+        content.addView(horizontalArticles(limit(popular, 6)));
 
         if (!"Tümü".equals(categoryFilter)) {
             List<Models.Article> cat = filterCategory(categoryFilter);
             if (!cat.isEmpty()) {
                 sectionTitle("Bu kategoriden seçtiklerimiz", categoryFilter);
-                content.addView(horizontalArticles(limit(cat, 8)));
+                content.addView(horizontalArticles(limit(cat, 6)));
             }
         }
 
         sectionTitle("Hızlı Erişim", "Sosyal hesaplarımız");
         LinearLayout platforms = new LinearLayout(this);
-        platforms.setOrientation(LinearLayout.HORIZONTAL);
-        for (String p : new String[]{"Instagram","YouTube","TikTok","Facebook"}) {
-            TextView chip = pill(p, false);
-            chip.setOnClickListener(v -> { accountPlatformFilter = p; showScreen("accounts"); });
+        for (String platform : new String[]{"Instagram","YouTube","TikTok","Facebook"}) {
+            TextView chip = pill(platform, false);
+            chip.setOnClickListener(v -> { accountPlatformFilter = platform; showScreen("accounts"); });
             platforms.addView(chip);
         }
         HorizontalScrollView ps = new HorizontalScrollView(this);
@@ -776,21 +813,58 @@ public class MainActivity extends Activity {
 
     private void applyThemeMode(){String mode=getSharedPreferences(DataRepository.PREFS,MODE_PRIVATE).getString("theme","system");boolean sys=(getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES;dark="dark".equals(mode)||("system".equals(mode)&&sys);}
     private String themeLabel(String t){if("dark".equals(t))return "Koyu";if("light".equals(t))return "Açık";return "Sistem";}
-    private void styleSystemBars(){Window w=getWindow();w.setStatusBarColor(bg());w.setNavigationBarColor(card());if(Build.VERSION.SDK_INT>=23)w.getDecorView().setSystemUiVisibility(dark?0:View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);}
+    private void styleSystemBars() {
+        Window w = getWindow();
+        w.setStatusBarColor(dark ? 0xff0e1013 : Color.WHITE);
+        w.setNavigationBarColor(card());
+        if (Build.VERSION.SDK_INT >= 23) w.getDecorView().setSystemUiVisibility(dark ? 0 : View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+    }
 
-    private int bg(){return dark?0xff0e1116:0xfff6f7f9;}
-    private int card(){return dark?0xff191d24:0xffffffff;}
-    private int text(){return dark?0xfff3f4f6:0xff15181d;}
-    private int secondary(){return dark?0xffa7afba:0xff66707c;}
-    private int muted(){return dark?0xff7c8591:0xff929aa5;}
-    private int brand(){return 0xffe50914;}
+    private int bg() { return dark ? 0xff101216 : 0xfff7f8fb; }
+    private int card() { return dark ? 0xff1d2026 : 0xffffffff; }
+    private int text() { return dark ? 0xfff4f5f7 : 0xff191b1f; }
+    private int secondary() { return dark ? 0xffabb0ba : 0xff666c76; }
+    private int muted() { return secondary(); }
+    private int brand() { return 0xffe11f30; }
 
-    private LinearLayout panel(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setBackground(round(card(),18));return c;}
+    private LinearLayout panel() {
+        LinearLayout c = new LinearLayout(this);
+        c.setOrientation(LinearLayout.VERTICAL);
+        c.setPadding(dp(15), dp(14), dp(15), dp(10));
+        c.setBackground(round(card(), 18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 6, 0, 6);
+        c.setLayoutParams(lp);
+        return c;
+    }
     private GradientDrawable round(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
     private TextView tv(String s,float sp,int color,boolean bold){TextView v=new TextView(this);v.setText(s);v.setTextSize(sp);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setLineSpacing(0,1.08f);return v;}
-    private TextView chip(String s,boolean selected){TextView v=tv(s,12,selected?Color.WHITE:text(),selected);v.setGravity(Gravity.CENTER);v.setPadding(dp(13),dp(8),dp(13),dp(8));v.setBackground(round(selected?brand():card(),18));v.setClickable(true);v.setFocusable(true);v.setContentDescription(s);v.setLayoutParams(margin(-2,-2,0,0,dp(7),0));return v;}
-    private TextView pill(String s,boolean primary){TextView v=tv(s,12,primary?Color.WHITE:text(),true);v.setGravity(Gravity.CENTER);v.setPadding(dp(12),dp(8),dp(12),dp(8));v.setBackground(round(primary?brand():card(),16));v.setClickable(true);v.setFocusable(true);v.setContentDescription(s);v.setLayoutParams(margin(-2,-2,dp(4),dp(4),dp(4),dp(4)));return v;}
-    private void sectionTitle(String title,String subtitle){TextView t=tv(title,19,text(),true);t.setPadding(0,dp(18),0,dp(2));content.addView(t);if(subtitle!=null&&!subtitle.isEmpty()){TextView s=tv(subtitle,12,secondary(),false);s.setPadding(0,0,0,dp(8));content.addView(s);}}
+    private TextView chip(String s, boolean selected) {
+        return pill(s, selected);
+    }
+    private TextView pill(String s, boolean primary) {
+        TextView v = tv(s, 13, primary ? Color.WHITE : text(), true);
+        v.setGravity(Gravity.CENTER);
+        v.setPadding(dp(14), 0, dp(14), 0);
+        v.setBackground(round(primary ? brand() : (dark ? 0xff252932 : 0xffeef0f4), 16));
+        v.setClickable(true);
+        v.setFocusable(true);
+        v.setContentDescription(s);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(38));
+        lp.setMargins(0, 5, 8, 5);
+        v.setLayoutParams(lp);
+        return v;
+    }
+    private void sectionTitle(String title, String subtitle) {
+        TextView titleView = tv(title, 20, text(), true);
+        titleView.setPadding(0, dp(18), 0, 0);
+        content.addView(titleView);
+        if (subtitle != null && !subtitle.isEmpty()) {
+            TextView subtitleView = tv(subtitle, 12, secondary(), false);
+            subtitleView.setPadding(0, 2, 0, dp(8));
+            content.addView(subtitleView);
+        }
+    }
     private TextView empty(String s){TextView v=tv(s,14,secondary(),false);v.setGravity(Gravity.CENTER);v.setPadding(dp(14),dp(30),dp(14),dp(30));return v;}
     private void addInfo(String title,String value){content.addView(menuLine(title,value));}
     private TextView menuLine(String title,String value){TextView v=tv(title+"\n"+value,14,text(),false);v.setPadding(dp(13),dp(10),dp(13),dp(10));v.setBackground(round(card(),14));v.setLayoutParams(margin(-1,-2,0,0,0,dp(7)));return v;}
