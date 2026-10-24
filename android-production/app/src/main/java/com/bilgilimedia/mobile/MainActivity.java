@@ -447,33 +447,49 @@ public class MainActivity extends Activity {
 
     private void renderSearch() {
         renderHeader(false);
-        content.addView(tv("Ara ve keşfet", 24, text(), true));
+        content.addView(tv("Ara ve keşfet", 27, text(), true));
         TextView desc = tv("Başlık, kategori, tür ve popülerliğe göre filtrele.", 14, secondary(), false);
-        desc.setPadding(0,dp(3),0,dp(12)); content.addView(desc);
+        desc.setPadding(0, dp(3), 0, dp(12));
+        content.addView(desc);
 
         EditText q = new EditText(this);
         q.setSingleLine(true);
         q.setText(query);
         q.setSelection(q.length());
         q.setHint("Örn. tarih, doğa, teknoloji...");
-        q.setTextColor(text()); q.setHintTextColor(muted());
+        q.setTextColor(text());
+        q.setHintTextColor(secondary());
         q.setBackground(round(card(), 16));
-        q.setPadding(dp(14),0,dp(14),0);
-        content.addView(q, margin(-1,dp(48),0,0,0,dp(12)));
+        q.setPadding(dp(14), 0, dp(14), 0);
+        content.addView(q, margin(-1, dp(54), 0, 0, 0, dp(12)));
+
         filterLabel("İçerik türü");
-        content.addView(chipRow(new String[]{"Tümü","Video","Yazı"}, typeFilter, v -> {typeFilter=(String)v; renderSearch();}));
+        content.addView(chipRow(new String[]{"Tümü","Yazı","Video","Favoriler"}, typeFilter, v -> {
+            typeFilter = (String) v;
+            renderSearch();
+        }));
+
         filterLabel("Sıralama");
-        content.addView(chipRow(new String[]{"Yeni","Popüler"}, sortFilter, v -> {sortFilter=(String)v; renderSearch();}));
+        content.addView(chipRow(new String[]{"Yeni","Popüler"}, sortFilter, v -> {
+            sortFilter = (String) v;
+            renderSearch();
+        }));
+
         filterLabel("Kategori");
         content.addView(categoryRail(true));
 
         LinearLayout results = new LinearLayout(this);
         results.setOrientation(LinearLayout.VERTICAL);
         content.addView(results);
+
         q.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s,int st,int c,int a) {}
-            @Override public void onTextChanged(CharSequence s,int st,int before,int count) { query=s.toString(); }
-            @Override public void afterTextChanged(Editable e) { renderSearchResults(results, e.toString()); }
+            @Override public void beforeTextChanged(CharSequence value, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence value, int start, int before, int count) {
+                query = value.toString();
+            }
+            @Override public void afterTextChanged(Editable value) {
+                renderSearchResults(results, value.toString());
+            }
         });
         renderSearchResults(results, query);
     }
@@ -501,14 +517,27 @@ public class MainActivity extends Activity {
             if (!"Tümü".equals(categoryFilter) && !categoryFilter.equals(a.category)) continue;
             if ("Video".equals(typeFilter) && !a.hasVideo()) continue;
             if ("Yazı".equals(typeFilter) && a.hasVideo()) continue;
-            String hay = normalize(a.title+" "+a.summary+" "+a.body+" "+a.category);
-            if (!needle.isEmpty() && !hay.contains(needle)) continue;
+            if ("Favoriler".equals(typeFilter) && !isSavedArticle(a.id)) continue;
+            String haystack = normalize(a.title + " " + a.summary + " " + a.body + " " + a.category);
+            if (!needle.isEmpty() && !haystack.contains(needle)) continue;
             results.add(a);
         }
-        if ("Popüler".equals(sortFilter)) results.sort((a,b)->Integer.compare(readCount(b.id),readCount(a.id)));
-        else Collections.reverse(results);
-        TextView count = tv(results.size()+" sonuç",12,secondary(),true); count.setPadding(0,dp(10),0,dp(6)); target.addView(count);
-        if (results.isEmpty()) { target.addView(empty("Bu filtrelerle eşleşen içerik bulunamadı.")); return; }
+        if ("Popüler".equals(sortFilter)) {
+            results.sort((a,b) -> Integer.compare(readCount(b.id), readCount(a.id)));
+        } else {
+            Collections.reverse(results);
+        }
+
+        TextView count = tv(results.size() + " sonuç", 12, secondary(), true);
+        count.setPadding(0, dp(12), 0, dp(4));
+        target.addView(count);
+        if (results.isEmpty()) {
+            TextView emptyState = tv("Bu filtrelerle eşleşen içerik bulunamadı.", 14, secondary(), false);
+            emptyState.setGravity(Gravity.CENTER);
+            emptyState.setPadding(dp(14), dp(30), dp(14), dp(20));
+            target.addView(emptyState);
+            return;
+        }
         for (Models.Article a : results) target.addView(articleCard(a));
     }
 
@@ -547,7 +576,7 @@ public class MainActivity extends Activity {
 
     private void renderSaved() {
         renderHeader(false);
-        content.addView(tv("Kaydedilenler",24,text(),true));
+        content.addView(tv("Kaydedilenler",27,text(),true));
         TextView d=tv("Favorilerin bu cihazda tutulur.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(12)); content.addView(d);
         Set<String> saved=getStringSet("saved");
         int count=0;
@@ -564,7 +593,7 @@ public class MainActivity extends Activity {
 
     private void renderHistory() {
         renderHeader(false);
-        content.addView(tv("Okuma Geçmişi",24,text(),true));
+        content.addView(tv("Okuma Geçmişi",27,text(),true));
         TextView d=tv("Daha önce açtığın içerikler ve son okunma zamanları.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
         List<String> ids=historyIds();
         if(ids.isEmpty()) content.addView(empty("Henüz okuma geçmişin yok."));
@@ -586,7 +615,7 @@ public class MainActivity extends Activity {
 
     private void renderAccounts() {
         renderHeader(false);
-        content.addView(tv("BilgiliMedia hesapları",24,text(),true));
+        content.addView(tv("BilgiliMedia hesapları",27,text(),true));
         TextView d=tv("33 sosyal medya hesabımıza tek yerden ulaş.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
         content.addView(chipRow(new String[]{"Tümü","Instagram","YouTube","TikTok","Facebook"},accountPlatformFilter,v->{accountPlatformFilter=(String)v;renderAccounts();}));
         for(Models.SocialAccount a:accounts){ if("Tümü".equals(accountPlatformFilter)||accountPlatformFilter.equals(a.platform)) content.addView(accountCard(a)); }
@@ -625,7 +654,7 @@ public class MainActivity extends Activity {
 
     private void renderMore() {
         renderHeader(false);
-        content.addView(tv("Daha",24,text(),true));
+        content.addView(tv("Daha",27,text(),true));
         TextView d=tv("Ayarlar, gizlilik ve BilgiliMedia bağlantıları.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
         sectionTitle("Uygulama","Tercihler ve kişisel alan");
         content.addView(menuCard("⚙ Ayarlar","Tema ve yerel veriler",()->showScreen("settings")));
@@ -677,7 +706,7 @@ public class MainActivity extends Activity {
 
     private void renderNotifications(){
         renderHeader(false);
-        content.addView(tv("Bildirimler",24,text(),true));
+        content.addView(tv("Bildirimler",27,text(),true));
         TextView d=tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç. Teknik Firebase işlemleri arka planda otomatik yönetilir.",14,secondary(),false);d.setPadding(0,dp(3),0,dp(12));content.addView(d);
         boolean master=prefs.getBoolean("notify_master",true);
         LinearLayout status=panel();status.setPadding(dp(13),dp(11),dp(13),dp(11));
@@ -699,7 +728,7 @@ public class MainActivity extends Activity {
 
     private void renderSettings(){
         renderHeader(false);
-        content.addView(tv("Ayarlar",24,text(),true));
+        content.addView(tv("Ayarlar",27,text(),true));
         TextView d=tv("Görünüm ve cihazında tutulan yerel verileri yönet.",14,secondary(),false);d.setPadding(0,dp(3),0,dp(12));content.addView(d);
         sectionTitle("Görünüm","Temanı seç");
         String theme=prefs.getString("theme","system");
@@ -713,7 +742,7 @@ public class MainActivity extends Activity {
     }
 
     private void renderPrivacy(){
-        renderHeader(false);content.addView(tv("Gizlilik",24,text(),true));
+        renderHeader(false);content.addView(tv("Gizlilik",27,text(),true));
         addInfo("BilgiliMedia Android uygulamasında veri kullanımının özeti.","");
         sectionTitle("Cihazda tutulanlar","Yerel tercihler");
         content.addView(tv("Kaydedilen içerikler, okuma geçmişi, son okunanlar, tema seçimi, bildirim tercihleri ve içerik önbelleği cihazında saklanabilir.",14,secondary(),false));
@@ -725,7 +754,7 @@ public class MainActivity extends Activity {
     }
 
     private void renderAbout(){
-        renderHeader(false);content.addView(tv("Hakkında",24,text(),true));
+        renderHeader(false);content.addView(tv("Hakkında",27,text(),true));
         content.addView(tv("BilgiliMedia • Bilgi, keşif ve medya",14,secondary(),false));
         sectionTitle("Sahiplik","Geliştirici bilgileri");
         addInfo("Geliştirici ve Kurucu","Şükrü Batuhan Bilgili");addInfo("Marka","BilgiliMedia");
@@ -741,7 +770,7 @@ public class MainActivity extends Activity {
     }
 
     private void renderDeveloper(){
-        renderHeader(false);content.addView(tv("Geliştirici Tanılama",24,text(),true));
+        renderHeader(false);content.addView(tv("Geliştirici Tanılama",27,text(),true));
         content.addView(tv("Bu ekran normal kullanıcı menüsünde gösterilmez. Firebase push sorunlarını teşhis etmek için saklanır.",13,secondary(),false));
         String token=prefs.getString("fcm_token","");
         String state=token.isEmpty()?"FCM Push: Başlatıldı • cihaz kaydı bekleniyor":"FCM Push: Hazır • cihaz kayıtlı";
@@ -953,7 +982,7 @@ public class MainActivity extends Activity {
     private void openPendingArticle(){if(pendingArticleId==null||pendingArticleId.isEmpty()||articles.isEmpty())return;Models.Article a=findArticle(pendingArticleId);if(a!=null){pendingArticleId="";openArticle(a);}}
     private String extractArticleId(Intent intent){if(intent==null)return "";String id=intent.getStringExtra("open_article_id");if(id!=null&&!id.isEmpty())return id;Uri data=intent.getData();if(data!=null&&"https".equalsIgnoreCase(data.getScheme())&&"bilgilimedia-60d6f.web.app".equalsIgnoreCase(data.getHost())){List<String>s=data.getPathSegments();if(s.size()>=2&&"content".equals(s.get(0)))return s.get(1);}return "";}
 
-    private void addHistory(String id){List<String> ids=historyIds();ids.remove(id);ids.add(0,id);while(ids.size()>60)ids.remove(ids.size()-1);prefs.edit().putString("history_all",TextUtils.join("|",ids)).putLong("history_time_"+id,System.currentTimeMillis()).apply();}
+    private void addHistory(String id){List<String> ids=historyIds();ids.remove(id);ids.add(0,id);while(ids.size()>100)ids.remove(ids.size()-1);prefs.edit().putString("history_all",TextUtils.join("|",ids)).putLong("history_time_"+id,System.currentTimeMillis()).apply();}
     private List<String> historyIds(){String raw=prefs.getString("history_all","");List<String> out=new ArrayList<>();if(raw==null||raw.isEmpty())return out;for(String x:raw.split("\\|"))if(!x.isEmpty())out.add(x);return out;}
     private void incrementRead(String id){prefs.edit().putInt("reads_"+id,readCount(id)+1).apply();}
     private int readCount(String id){return prefs.getInt("reads_"+id,0);}
