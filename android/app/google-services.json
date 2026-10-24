@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "190776938532",
+    "project_id": "bilgilimedia-60d6f",
+    "storage_bucket": "bilgilimedia-60d6f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:190776938532:android:56fff2dc4359a7ac4788b1",
+        "android_client_info": {
+          "package_name": "com.bilgilimedia.mobile.media.preview"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD22yhT86xghiTMyUPQMUuK_wxQwR_6Ywg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
