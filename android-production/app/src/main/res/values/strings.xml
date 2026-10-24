@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">BilgiliMedia</string>
+    <string name="notification_channel_name">BilgiliMedia içerikleri</string>
+    <string name="notification_channel_description">Seçtiğiniz kategorilerde yeni içerik bildirimleri.</string>
+</resources>
