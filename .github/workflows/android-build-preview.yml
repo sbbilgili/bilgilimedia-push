@@ -1,0 +1,56 @@
+name: Build Android 1.4.8 Preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "android/**"
+      - ".github/workflows/android-build-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Ensure Android API 36
+        shell: bash
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;35.0.0"
+
+      - name: Prepare offline fallbacks
+        shell: bash
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp content/feed.json android/app/src/main/assets/feed.json
+          cp hosting/app-config.json android/app/src/main/assets/app-config.json
+
+      - name: Build preview APK and AAB
+        working-directory: android
+        run: gradle --no-daemon clean :app:assembleRelease :app:bundleRelease
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: BilgiliMedia-Android-1.4.8-unsigned
+          if-no-files-found: error
+          path: |
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            android/app/build/outputs/bundle/release/app-release.aab
