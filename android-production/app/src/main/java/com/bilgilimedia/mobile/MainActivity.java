@@ -364,55 +364,68 @@ public class MainActivity extends Activity {
     }
 
     private View featuredCard(Models.Article a) {
-        LinearLayout card = panel();
-        card.setPadding(0,0,0,dp(14));
-        FrameLayout cover = cover(a, dp(190));
-        card.addView(cover, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(190)));
+        LinearLayout cardView = panel();
+        cardView.setPadding(0, 0, 0, dp(14));
+        cardView.setClipToPadding(false);
+        cardView.addView(cover(a, 190, true));
+
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(dp(16), dp(13), dp(16), 0);
-        TextView meta = tv(a.category + " • " + a.minutes + " DK" + (a.hasVideo() ? " • ▶ VIDEO" : ""), 12, brand(), true);
-        body.addView(meta);
-        TextView title = tv(a.title, 21, text(), true);
-        title.setPadding(0, dp(6), 0, dp(6));
+        body.setPadding(dp(16), dp(14), dp(16), 0);
+
+        body.addView(tv(a.category.toUpperCase(Locale.ROOT) + " • " + a.minutes + " DK", 10, brand(), true));
+        if (a.hasVideo()) body.addView(tv("▶ VIDEO", 10, 0xffd71920, true));
+
+        TextView title = tv(a.title, 23, text(), true);
+        title.setPadding(0, dp(6), 0, dp(5));
         body.addView(title);
-        TextView summary = tv(a.summary, 14, secondary(), false);
-        summary.setMaxLines(3);
-        body.addView(summary);
-        TextView read = pill("İçeriği oku  →", true);
-        read.setGravity(Gravity.CENTER);
+        body.addView(tv(a.summary, 14, secondary(), false));
+
+        TextView read = tv("İçeriği oku  →", 14, brand(), true);
+        read.setPadding(0, dp(12), 0, 0);
         read.setOnClickListener(v -> openArticle(a));
-        body.addView(read, margin(-1, dp(44), 0, dp(12),0,0));
-        card.addView(body);
-        card.setOnClickListener(v -> openArticle(a));
-        return card;
+        body.addView(read);
+
+        cardView.addView(body);
+        cardView.setOnClickListener(v -> openArticle(a));
+        return cardView;
     }
 
     private HorizontalScrollView horizontalArticles(List<Models.Article> list) {
         HorizontalScrollView sc = new HorizontalScrollView(this);
         sc.setHorizontalScrollBarEnabled(false);
-        sc.setFillViewport(false);
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
+
         for (Models.Article a : list) {
-            LinearLayout c = panel();
-            c.setPadding(0,0,0,dp(10));
-            FrameLayout cover = cover(a, dp(105));
-            c.addView(cover, new LinearLayout.LayoutParams(dp(250), dp(105)));
-            LinearLayout b = new LinearLayout(this);
-            b.setOrientation(LinearLayout.VERTICAL);
-            b.setPadding(dp(12), dp(9), dp(12), 0);
-            b.addView(tv(a.category + " • " + a.minutes + " DK" + (a.hasVideo()?" • ▶ VIDEO":""), 11, brand(), true));
-            TextView title = tv(a.title, 16, text(), true);
+            LinearLayout cardView = new LinearLayout(this);
+            cardView.setOrientation(LinearLayout.VERTICAL);
+            cardView.setBackground(round(card(), 18));
+            cardView.setClickable(true);
+            cardView.setFocusable(true);
+            LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(dp(250), dp(235));
+            cardLp.setMargins(0, dp(5), dp(10), dp(5));
+            cardView.setLayoutParams(cardLp);
+
+            cardView.addView(cover(a, 118, false));
+
+            LinearLayout body = new LinearLayout(this);
+            body.setOrientation(LinearLayout.VERTICAL);
+            body.setPadding(dp(13), dp(10), dp(13), dp(10));
+            body.addView(tv(a.category.toUpperCase(Locale.ROOT) + " • " + a.minutes + " DK", 10, brand(), true));
+            if (a.hasVideo()) body.addView(tv("▶ VIDEO", 10, 0xffd71920, true));
+
+            TextView title = tv(a.title, 17, text(), true);
             title.setMaxLines(2);
             title.setEllipsize(TextUtils.TruncateAt.END);
-            title.setPadding(0, dp(5), 0, dp(8));
-            b.addView(title);
-            TextView action = tv("Okumaya başla →", 12, brand(), true);
-            b.addView(action);
-            c.addView(b);
-            c.setOnClickListener(v -> openArticle(a));
-            row.addView(c, margin(dp(250), ViewGroup.LayoutParams.WRAP_CONTENT, 0,0,dp(10),0));
+            title.setPadding(0, dp(6), 0, dp(4));
+            body.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+            int reads = readCount(a.id);
+            body.addView(tv(reads > 0 ? reads + " okuma  →" : "Yeni  →", 12, reads > 0 ? secondary() : brand(), true));
+            cardView.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+            cardView.setOnClickListener(v -> openArticle(a));
+            row.addView(cardView);
         }
         sc.addView(row);
         return sc;
@@ -500,17 +513,36 @@ public class MainActivity extends Activity {
     }
 
     private View articleCard(Models.Article a) {
-        LinearLayout c=panel();
-        c.setPadding(dp(12),dp(12),dp(12),dp(10));
-        c.addView(tv(a.category+" • "+a.minutes+" DK"+(a.hasVideo()?" • ▶ VIDEO":""),11,brand(),true));
-        TextView title=tv(a.title,18,text(),true); title.setPadding(0,dp(5),0,dp(4)); c.addView(title);
-        TextView sum=tv(a.summary,13,secondary(),false); sum.setMaxLines(3); sum.setEllipsize(TextUtils.TruncateAt.END); c.addView(sum);
-        LinearLayout actions=new LinearLayout(this); actions.setGravity(Gravity.END); actions.setPadding(0,dp(6),0,0);
-        TextView fav=pill(isSavedArticle(a.id)?"♥":"♡",false); fav.setContentDescription(isSavedArticle(a.id)?"Favorilerden çıkar":"Favorilere kaydet");
-        fav.setOnClickListener(v->{toggleSavedArticle(a.id); showScreen(screen);}); actions.addView(fav);
-        TextView read=pill("Okumaya başla →",true); read.setOnClickListener(v->openArticle(a)); actions.addView(read);
-        c.addView(actions); c.setOnClickListener(v->openArticle(a));
-        LinearLayout wrap=new LinearLayout(this); wrap.setOrientation(LinearLayout.VERTICAL); wrap.addView(c,margin(-1,-2,0,0,0,dp(10))); return wrap;
+        LinearLayout cardView = panel();
+        cardView.setPadding(0, 0, 0, dp(10));
+        cardView.addView(cover(a, 118, false));
+
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(14), dp(11), dp(14), 0);
+        body.addView(tv(a.category.toUpperCase(Locale.ROOT) + " • " + a.minutes + " DK", 10, brand(), true));
+        if (a.hasVideo()) body.addView(tv("▶ VIDEO", 10, 0xffd71920, true));
+
+        TextView title = tv(a.title, 19, text(), true);
+        title.setPadding(0, dp(5), 0, dp(4));
+        body.addView(title);
+        body.addView(tv(a.summary, 13, secondary(), false));
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        TextView read = tv("Okumaya başla →", 13, brand(), true);
+        read.setOnClickListener(v -> openArticle(a));
+        actions.addView(read, new LinearLayout.LayoutParams(0, dp(40), 1f));
+
+        TextView fav = tv(isSavedArticle(a.id) ? "♥" : "♡", 23, isSavedArticle(a.id) ? brand() : secondary(), true);
+        fav.setGravity(Gravity.CENTER);
+        fav.setOnClickListener(v -> { toggleSavedArticle(a.id); showScreen(screen); });
+        actions.addView(fav, new LinearLayout.LayoutParams(dp(46), dp(40)));
+
+        body.addView(actions);
+        cardView.addView(body);
+        cardView.setOnClickListener(v -> openArticle(a));
+        return cardView;
     }
 
     private void renderSaved() {
@@ -561,16 +593,34 @@ public class MainActivity extends Activity {
     }
 
     private View accountCard(Models.SocialAccount a) {
-        LinearLayout c=panel(); c.setPadding(dp(13),dp(10),dp(10),dp(10));
-        LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout words=new LinearLayout(this); words.setOrientation(LinearLayout.VERTICAL);
-        words.addView(tv(a.name,16,text(),true));
-        words.addView(tv(a.platform+" • "+a.handle,12,secondary(),false));
-        row.addView(words,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));
-        TextView open=pill("Uygulamada aç →",true); open.setOnClickListener(v->openSocial(a)); row.addView(open);
-        TextView fav=pill(isSavedAccount(a.url)?"♥":"♡",false); fav.setContentDescription(isSavedAccount(a.url)?"Hesabı favorilerden çıkar":"Hesabı kaydet"); fav.setOnClickListener(v->{toggleSavedAccount(a.url);showScreen(screen);}); row.addView(fav);
-        c.addView(row); c.setOnClickListener(v->openSocial(a));
-        LinearLayout wrap=new LinearLayout(this);wrap.addView(c,margin(-1,-2,0,0,0,dp(8)));return wrap;
+        LinearLayout cardView = panel();
+        cardView.addView(tv(a.platform + " • " + socialCategory(a), 16, text(), true));
+        String handle = a.handle.startsWith("@") ? a.handle : "@" + a.handle;
+        cardView.addView(tv(handle, 13, secondary(), false));
+
+        LinearLayout actions = new LinearLayout(this);
+        TextView open = tv("Uygulamada aç →", 13, brand(), true);
+        open.setOnClickListener(v -> openSocial(a));
+        actions.addView(open, new LinearLayout.LayoutParams(0, dp(38), 1f));
+
+        TextView fav = tv(isSavedAccount(a.url) ? "♥" : "♡", 22, isSavedAccount(a.url) ? brand() : secondary(), true);
+        fav.setGravity(Gravity.CENTER);
+        fav.setOnClickListener(v -> { toggleSavedAccount(a.url); showScreen(screen); });
+        actions.addView(fav, new LinearLayout.LayoutParams(dp(44), dp(38)));
+
+        cardView.addView(actions);
+        cardView.setOnClickListener(v -> openSocial(a));
+        return cardView;
+    }
+
+    private String socialCategory(Models.SocialAccount a) {
+        String n = a.name == null ? "" : a.name;
+        if ("BilgiliMedia".equals(n)) return "Genel";
+        if (n.startsWith("BilgiliMedia ")) return n.substring("BilgiliMedia ".length());
+        if (n.startsWith("BilgiliMedia-")) return n.substring("BilgiliMedia-".length());
+        if (n.startsWith("Bilgilimedia-")) return n.substring("Bilgilimedia-".length());
+        if (n.startsWith("Bilgili ")) return n.substring("Bilgili ".length());
+        return n.isEmpty() ? "Genel" : n;
     }
 
     private void renderMore() {
@@ -704,37 +754,160 @@ public class MainActivity extends Activity {
         TextView local=pill("Yerel test bildirimi gönder",true);local.setOnClickListener(v->NotificationHelper.show(this,"","Genel","BilgiliMedia test bildirimi","Bildirim altyapısı çalışıyor."));content.addView(local);
     }
 
-    private void openArticle(Models.Article a){
-        screen="article";addHistory(a.id);incrementRead(a.id);content.removeAllViews();
-        TextView back=pill("← Geri",false);back.setOnClickListener(v->showScreen("home"));content.addView(back);
-        TextView meta=tv(a.category+" • "+a.minutes+" DK OKUMA"+(a.hasVideo()?" • ▶ VIDEO":""),12,brand(),true);meta.setPadding(0,dp(12),0,dp(5));content.addView(meta);
-        if(!a.imageUrl.isEmpty()) content.addView(cover(a,dp(210)),new LinearLayout.LayoutParams(-1,dp(210)));
-        TextView title=tv(a.title,25,text(),true);title.setPadding(0,dp(12),0,dp(8));content.addView(title);
-        TextView summary=tv(a.summary,16,secondary(),true);summary.setPadding(0,0,0,dp(12));content.addView(summary);
-        TextView body=tv(a.body,16,text(),false);body.setLineSpacing(0,1.18f);content.addView(body);
-        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setPadding(0,dp(12),0,dp(5));
-        TextView fav=pill(isSavedArticle(a.id)?"♥ Kaydedildi":"♡ Kaydet",false);fav.setOnClickListener(v->{toggleSavedArticle(a.id);openArticle(a);});actions.addView(fav);
-        TextView share=pill("↗ Paylaş",false);share.setOnClickListener(v->shareArticle(a));actions.addView(share);content.addView(actions);
-        if(a.hasVideo()){TextView video=pill("▶  Videoyu izle",true);video.setOnClickListener(v->openUrl(a.videoUrl));content.addView(video);}
-        sectionTitle("Kaynaklar","İçeriğin hazırlanmasında yararlanılan referanslar");
-        if(a.sources.isEmpty()) content.addView(tv("Bu çevrimdışı yedek içerik için kaynak bağlantısı henüz bulunmuyor.",13,secondary(),false));
-        for(Models.Source s:a.sources) content.addView(menuCard("↗ "+s.title,host(s.url),()->openUrl(s.url)));
-        sectionTitle("BilgiliMedia notu","Bu içerik kısa okuma formatındadır.");
-        content.addView(tv("Detaylı araştırmalarda birincil ve güvenilir kaynakları karşılaştırmayı unutma.",13,secondary(),false));
-        renderBottomNav();scroll.post(()->scroll.scrollTo(0,0));
+    private void openArticle(Models.Article a) {
+        screen = "article";
+        addHistory(a.id);
+        incrementRead(a.id);
+        content.removeAllViews();
+        renderBottomNav();
+
+        TextView back = tv("← Geri", 14, brand(), true);
+        back.setPadding(0, 4, 0, dp(14));
+        back.setOnClickListener(v -> showScreen("home"));
+        content.addView(back);
+
+        content.addView(cover(a, 175, true));
+
+        TextView meta = tv(a.category.toUpperCase(Locale.ROOT) + " • " + a.minutes + " DK OKUMA", 11, brand(), true);
+        meta.setPadding(0, dp(14), 0, 0);
+        content.addView(meta);
+
+        TextView title = tv(a.title, 29, text(), true);
+        title.setPadding(0, dp(8), 0, dp(10));
+        content.addView(title);
+        content.addView(tv(a.summary, 16, secondary(), false));
+
+        if (!a.imageCredit.isEmpty()) {
+            TextView credit = tv("Görsel: " + a.imageCredit + (!a.imageSource.isEmpty() ? " • Kaynağı aç" : ""), 11, secondary(), false);
+            if (!a.imageSource.isEmpty()) credit.setOnClickListener(v -> openUrl(a.imageSource));
+            content.addView(credit);
+        }
+
+        LinearLayout actions = new LinearLayout(this);
+        TextView fav = pill(isSavedArticle(a.id) ? "♥ Kaydedildi" : "♡ Kaydet", false);
+        fav.setOnClickListener(v -> { toggleSavedArticle(a.id); openArticle(a); });
+        actions.addView(fav);
+        TextView share = pill("↗ Paylaş", false);
+        share.setOnClickListener(v -> shareArticle(a));
+        actions.addView(share);
+        content.addView(actions);
+
+        if (a.hasVideo()) {
+            TextView video = tv("▶  Videoyu izle", 15, Color.WHITE, true);
+            video.setGravity(Gravity.CENTER);
+            video.setBackground(round(brand(), 16));
+            video.setPadding(dp(14), 0, dp(14), 0);
+            video.setOnClickListener(v -> openUrl(a.videoUrl));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50));
+            lp.setMargins(0, dp(10), 0, dp(4));
+            content.addView(video, lp);
+
+            if (!a.videoCredit.isEmpty()) {
+                TextView vc = tv("Video: " + a.videoCredit + (!a.videoSource.isEmpty() ? " • Kaynağı aç" : ""), 11, secondary(), false);
+                vc.setPadding(0, dp(5), 0, dp(5));
+                if (!a.videoSource.isEmpty()) vc.setOnClickListener(v -> openUrl(a.videoSource));
+                content.addView(vc);
+            }
+        }
+
+        TextView body = tv(a.body, 16, text(), false);
+        body.setLineSpacing(0, 1.3f);
+        body.setPadding(0, dp(10), 0, dp(16));
+        content.addView(body);
+
+        sectionTitle("Kaynaklar", "İçeriğin hazırlanmasında yararlanılan referanslar");
+        if (a.sources.isEmpty()) content.addView(tv("Bu çevrimdışı yedek içerik için kaynak bağlantısı henüz bulunmuyor.", 13, secondary(), false));
+        for (Models.Source source : a.sources) content.addView(menuCard("↗ " + source.title, host(source.url), () -> openUrl(source.url)));
+        sectionTitle("BilgiliMedia notu", "Bu içerik kısa okuma formatındadır.");
+        content.addView(tv("Detaylı araştırmalarda birincil ve güvenilir kaynakları karşılaştırmayı unutma.", 13, secondary(), false));
+        scroll.post(() -> scroll.scrollTo(0, 0));
     }
 
-    private FrameLayout cover(Models.Article a,int height){
-        FrameLayout frame=new FrameLayout(this);frame.setBackground(gradientFor(a.category));frame.setClipToOutline(false);
-        ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setAlpha(0f);frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
-        TextView mark=tv(categoryMark(a.category),36,Color.WHITE,true);mark.setGravity(Gravity.CENTER);frame.addView(mark,new FrameLayout.LayoutParams(-1,-1));
-        LinearLayout overlay=new LinearLayout(this);overlay.setOrientation(LinearLayout.VERTICAL);overlay.setGravity(Gravity.BOTTOM);overlay.setPadding(dp(12),dp(8),dp(12),dp(10));
-        TextView logo=tv("BİLGİLİMEDIA",11,Color.WHITE,true);overlay.addView(logo);
-        if(a.hasVideo()) overlay.addView(tv("▶ VIDEO",11,Color.WHITE,true));
-        frame.addView(overlay,new FrameLayout.LayoutParams(-1,-1));
-        if(!a.imageUrl.isEmpty()) loadImage(a.imageUrl,image,mark);
-        frame.setContentDescription((a.imageUrl.isEmpty()?"Renkli ":"Fotoğraflı ")+a.category+" kapak görseli");
+    private FrameLayout cover(Models.Article a, int height) {
+        return cover(a, height, false);
+    }
+
+    private FrameLayout cover(Models.Article a, int height, boolean featured) {
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackground(goldenGradientFor(a.category));
+
+        String imageUrl = a.imageUrl == null ? "" : a.imageUrl;
+        boolean hasImage = !imageUrl.isEmpty();
+        if (hasImage) {
+            ImageView image = new ImageView(this);
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setAlpha(0f);
+            frame.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            loadImage(imageUrl, image, null);
+            View shade = new View(this);
+            shade.setBackgroundColor(0x44000000);
+            frame.addView(shade, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
+
+        TextView mark = tv(goldenCategoryMark(a.category), featured ? 50 : 38, 0x55ffffff, true);
+        mark.setGravity(Gravity.CENTER);
+        FrameLayout.LayoutParams markLp = new FrameLayout.LayoutParams(dp(88), dp(88), Gravity.CENTER_VERTICAL | Gravity.END);
+        markLp.setMargins(0, 0, dp(10), 0);
+        frame.addView(mark, markLp);
+
+        LinearLayout overlay = new LinearLayout(this);
+        overlay.setOrientation(LinearLayout.VERTICAL);
+        overlay.setGravity(Gravity.BOTTOM);
+        overlay.setPadding(dp(15), dp(12), dp(15), dp(12));
+        overlay.addView(tv("BİLGİLİMEDIA", 10, 0xeeffffff, true));
+        TextView category = tv(a.category, featured ? 19 : 16, Color.WHITE, true);
+        category.setPadding(0, dp(3), 0, 0);
+        overlay.addView(category);
+        frame.addView(overlay, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        if (a.hasVideo()) {
+            TextView video = tv("▶ VIDEO", 10, Color.WHITE, true);
+            video.setGravity(Gravity.CENTER);
+            video.setBackground(round(0xccd71920, 12));
+            video.setClickable(true);
+            video.setFocusable(true);
+            video.setContentDescription("Videoyu doğrudan aç");
+            video.setOnClickListener(v -> openUrl(a.videoUrl));
+            FrameLayout.LayoutParams videoLp = new FrameLayout.LayoutParams(dp(82), dp(34), Gravity.TOP | Gravity.END);
+            videoLp.setMargins(0, dp(9), dp(9), 0);
+            frame.addView(video, videoLp);
+        }
+
+        frame.setContentDescription((hasImage ? "Fotoğraflı " : "") + a.category + " kapak görseli");
+        frame.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(height)));
         return frame;
+    }
+
+    private GradientDrawable goldenGradientFor(String category) {
+        int[] colors;
+        switch (category) {
+            case "Genel": colors = new int[]{0xff5b5fef, 0xff8d5cf6}; break;
+            case "Belgesel": colors = new int[]{0xff075e68, 0xff27a69e}; break;
+            case "Tarih": colors = new int[]{0xff7b4129, 0xffc78755}; break;
+            case "Doğa": colors = new int[]{0xff1f7040, 0xff66b85d}; break;
+            case "Yemek": colors = new int[]{0xffb84128, 0xfff09b42}; break;
+            case "Teknoloji": colors = new int[]{0xff13549c, 0xff39a0e7}; break;
+            case "Animasyon": colors = new int[]{0xff6a3fb5, 0xffd66bb3}; break;
+            case "Çizgi Film": colors = new int[]{0xffe57a18, 0xffffc84b}; break;
+            default: colors = new int[]{0xffe11f30, 0xffb80f23};
+        }
+        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TL_BR, colors);
+        gradient.setCornerRadius(dp(18));
+        return gradient;
+    }
+
+    private String goldenCategoryMark(String category) {
+        switch (category) {
+            case "Genel": return "✦";
+            case "Belgesel": return "◉";
+            case "Tarih": return "⌛";
+            case "Doğa": return "❧";
+            case "Yemek": return "◌";
+            case "Teknoloji": return "⌁";
+            case "Animasyon": return "◆";
+            case "Çizgi Film": return "✎";
+            default: return "▶";
+        }
     }
 
     private void loadImage(String url,ImageView view,TextView fallback){
@@ -745,7 +918,7 @@ public class MainActivity extends Activity {
                     URL u=new URL(url);if(!"https".equalsIgnoreCase(u.getProtocol()))return;HttpURLConnection c=(HttpURLConnection)u.openConnection();c.setConnectTimeout(7000);c.setReadTimeout(9000);c.setRequestProperty("User-Agent","BilgiliMedia/1.4.9");
                     if(c.getResponseCode()>=200&&c.getResponseCode()<300){try(java.io.InputStream in=c.getInputStream();FileOutputStream out=new FileOutputStream(f)){byte[] buf=new byte[8192];int n,total=0;while((n=in.read(buf))>0){total+=n;if(total>4_000_000)throw new IllegalStateException("image too large");out.write(buf,0,n);}}}else return;c.disconnect();
                 }
-                Bitmap b=BitmapFactory.decodeFile(f.getAbsolutePath());if(b!=null)runOnUiThread(()->{view.setImageBitmap(b);view.animate().alpha(1f).setDuration(220).start();fallback.setVisibility(View.GONE);});
+                Bitmap b=BitmapFactory.decodeFile(f.getAbsolutePath());if(b!=null)runOnUiThread(()->{view.setImageBitmap(b);view.animate().alpha(1f).setDuration(180).start();if (fallback != null) fallback.setVisibility(View.GONE);});
             }catch(Exception ignored){}
         });
     }
