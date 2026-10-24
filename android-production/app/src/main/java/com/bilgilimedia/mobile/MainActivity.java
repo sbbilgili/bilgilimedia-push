@@ -418,3 +418,213 @@ public class MainActivity extends Activity {
         content.addView(categoryRail(true));
 
         LinearLayout results = new LinearLayout(this);
+        results.setOrientation(LinearLayout.VERTICAL);
+        content.addView(results);
+        q.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s,int st,int c,int a) {}
+            @Override public void onTextChanged(CharSequence s,int st,int before,int count) { query=s.toString(); }
+            @Override public void afterTextChanged(Editable e) { renderSearchResults(results, e.toString()); }
+        });
+        renderSearchResults(results, query);
+    }
+
+    private interface Choice { void select(Object value); }
+
+    private View chipRow(String[] values, String selected, Choice choice) {
+        HorizontalScrollView sc = new HorizontalScrollView(this); sc.setHorizontalScrollBarEnabled(false);
+        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL);
+        for (String s : values) {
+            TextView c=chip(s,s.equals(selected)); c.setOnClickListener(v->choice.select(s)); row.addView(c);
+        }
+        sc.addView(row); return sc;
+    }
+
+    private void filterLabel(String s) {
+        TextView t=tv(s,12,secondary(),true); t.setPadding(0,dp(8),0,dp(5)); content.addView(t);
+    }
+
+    private void renderSearchResults(LinearLayout target, String q) {
+        target.removeAllViews();
+        List<Models.Article> results = new ArrayList<>();
+        String needle = normalize(q);
+        for (Models.Article a : articles) {
+            if (!"Tümü".equals(categoryFilter) && !categoryFilter.equals(a.category)) continue;
+            if ("Video".equals(typeFilter) && !a.hasVideo()) continue;
+            if ("Yazı".equals(typeFilter) && a.hasVideo()) continue;
+            String hay = normalize(a.title+" "+a.summary+" "+a.body+" "+a.category);
+            if (!needle.isEmpty() && !hay.contains(needle)) continue;
+            results.add(a);
+        }
+        if ("Popüler".equals(sortFilter)) results.sort((a,b)->Integer.compare(readCount(b.id),readCount(a.id)));
+        else Collections.reverse(results);
+        TextView count = tv(results.size()+" sonuç",12,secondary(),true); count.setPadding(0,dp(10),0,dp(6)); target.addView(count);
+        if (results.isEmpty()) { target.addView(empty("Bu filtrelerle eşleşen içerik bulunamadı.")); return; }
+        for (Models.Article a : results) target.addView(articleCard(a));
+    }
+
+    private View articleCard(Models.Article a) {
+        LinearLayout c=card();
+        c.setPadding(dp(12),dp(12),dp(12),dp(10));
+        c.addView(tv(a.category+" • "+a.minutes+" DK"+(a.hasVideo()?" • ▶ VIDEO":""),11,brand(),true));
+        TextView title=tv(a.title,18,text(),true); title.setPadding(0,dp(5),0,dp(4)); c.addView(title);
+        TextView sum=tv(a.summary,13,secondary(),false); sum.setMaxLines(3); sum.setEllipsize(TextUtils.TruncateAt.END); c.addView(sum);
+        LinearLayout actions=new LinearLayout(this); actions.setGravity(Gravity.END); actions.setPadding(0,dp(6),0,0);
+        TextView fav=pill(isSavedArticle(a.id)?"♥":"♡",false); fav.setContentDescription(isSavedArticle(a.id)?"Favorilerden çıkar":"Favorilere kaydet");
+        fav.setOnClickListener(v->{toggleSavedArticle(a.id); showScreen(screen);}); actions.addView(fav);
+        TextView read=pill("Okumaya başla →",true); read.setOnClickListener(v->openArticle(a)); actions.addView(read);
+        c.addView(actions); c.setOnClickListener(v->openArticle(a));
+        LinearLayout wrap=new LinearLayout(this); wrap.setOrientation(LinearLayout.VERTICAL); wrap.addView(c,margin(-1,-2,0,0,0,dp(10))); return wrap;
+    }
+
+    private void renderSaved() {
+        renderHeader(false);
+        content.addView(tv("Kaydedilenler",24,text(),true));
+        TextView d=tv("Favorilerin bu cihazda tutulur.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(12)); content.addView(d);
+        Set<String> saved=getStringSet("saved");
+        int count=0;
+        for(Models.Article a:articles) if(saved.contains("a:"+a.id) || saved.contains(a.id)){ content.addView(articleCard(a)); count++; }
+        if(count==0) content.addView(empty("Henüz içerik kaydetmedin. ♡ simgesine dokunarak favori oluşturabilirsin."));
+
+        List<Models.SocialAccount> savedAccounts=new ArrayList<>();
+        for(Models.SocialAccount a:accounts) if(saved.contains("p:"+a.url)) savedAccounts.add(a);
+        if(!savedAccounts.isEmpty()){
+            sectionTitle("Kaydedilen hesaplar","Hızlı erişim");
+            for(Models.SocialAccount a:savedAccounts) content.addView(accountCard(a));
+        }
+    }
+
+    private void renderHistory() {
+        renderHeader(false);
+        content.addView(tv("Okuma Geçmişi",24,text(),true));
+        TextView d=tv("Daha önce açtığın içerikler ve son okunma zamanları.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
+        List<String> ids=historyIds();
+        if(ids.isEmpty()) content.addView(empty("Henüz okuma geçmişin yok."));
+        DateFormat fmt=new SimpleDateFormat("dd MMM yyyy • HH:mm",new Locale("tr","TR"));
+        for(String id:ids){
+            Models.Article a=findArticle(id);
+            if(a==null) continue;
+            LinearLayout box=card(); box.setPadding(dp(12),dp(10),dp(12),dp(10));
+            box.addView(tv(a.title,16,text(),true));
+            long ts=prefs.getLong("history_time_"+id,0);
+            box.addView(tv(ts>0?fmt.format(new Date(ts)):"Okunma zamanı bilinmiyor",11,secondary(),false));
+            box.setOnClickListener(v->openArticle(a));
+            content.addView(box,margin(-1,-2,0,0,0,dp(8)));
+        }
+        if(!ids.isEmpty()){
+            TextView clear=pill("Geçmişi temizle",false); clear.setOnClickListener(v->confirm("Okuma geçmişi temizlensin mi?",()->{prefs.edit().remove("history_all").apply();renderHistory();})); content.addView(clear);
+        }
+    }
+
+    private void renderAccounts() {
+        renderHeader(false);
+        content.addView(tv("BilgiliMedia hesapları",24,text(),true));
+        TextView d=tv("33 sosyal medya hesabımıza tek yerden ulaş.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
+        content.addView(chipRow(new String[]{"Tümü","Instagram","YouTube","TikTok","Facebook"},accountPlatformFilter,v->{accountPlatformFilter=(String)v;renderAccounts();}));
+        for(Models.SocialAccount a:accounts){ if("Tümü".equals(accountPlatformFilter)||accountPlatformFilter.equals(a.platform)) content.addView(accountCard(a)); }
+    }
+
+    private View accountCard(Models.SocialAccount a) {
+        LinearLayout c=card(); c.setPadding(dp(13),dp(10),dp(10),dp(10));
+        LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout words=new LinearLayout(this); words.setOrientation(LinearLayout.VERTICAL);
+        words.addView(tv(a.name,16,text(),true));
+        words.addView(tv(a.platform+" • "+a.handle,12,secondary(),false));
+        row.addView(words,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));
+        TextView open=pill("Uygulamada aç →",true); open.setOnClickListener(v->openSocial(a)); row.addView(open);
+        TextView fav=pill(isSavedAccount(a.url)?"♥":"♡",false); fav.setContentDescription(isSavedAccount(a.url)?"Hesabı favorilerden çıkar":"Hesabı kaydet"); fav.setOnClickListener(v->{toggleSavedAccount(a.url);showScreen(screen);}); row.addView(fav);
+        c.addView(row); c.setOnClickListener(v->openSocial(a));
+        LinearLayout wrap=new LinearLayout(this);wrap.addView(c,margin(-1,-2,0,0,0,dp(8)));return wrap;
+    }
+
+    private void renderMore() {
+        renderHeader(false);
+        content.addView(tv("Daha",24,text(),true));
+        TextView d=tv("Ayarlar, gizlilik ve BilgiliMedia bağlantıları.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
+        sectionTitle("Uygulama","Tercihler ve kişisel alan");
+        content.addView(menuCard("⚙ Ayarlar","Tema ve yerel veriler",()->showScreen("settings")));
+        String notifyState=notificationsAllowed()?"Açık":"Kapalı";
+        content.addView(menuCard("▣ Bildirimler",notifyState,()->showScreen("notifications")));
+        content.addView(menuCard("▤ Okuma Geçmişi",historyIds().size()+" kayıt",()->showScreen("history")));
+
+        if(!config.sections.isEmpty()){
+            sectionTitle("İçerik Bölümleri","Uzaktan yönetilen kategori yapısı");
+            for(Models.Section s:config.sections){
+                int n=0; for(Models.Category c:config.categories) if(s.id.equals(c.sectionId)) n++;
+                final String sec=s.id;
+                content.addView(menuCard(s.title,n+" kategori",()->showSection(sec)));
+            }
+        }
+
+        sectionTitle("Bilgi","Gizlilik ve uygulama bilgileri");
+        content.addView(menuCard("▣ Gizlilik","Veri kullanımı ve gizlilik politikası",()->showScreen("privacy")));
+        content.addView(menuCard("ⓘ Hakkında","BilgiliMedia ve sürüm bilgisi",()->showScreen("about")));
+
+        if(!config.extraPages.isEmpty()){
+            sectionTitle("Ek sayfalar","BilgiliMedia tarafından uzaktan eklenen bölümler");
+            for(Models.ExtraPage p:config.extraPages) content.addView(menuCard("↗ "+p.title,p.subtitle,()->openUrl(p.url)));
+        }
+        sectionTitle("Bağlantılar","BilgiliMedia");
+        content.addView(menuCard("▣ Web sitemiz","spoo.me/bilgilimedia",()->openUrl(WEB)));
+        content.addView(menuCard("✉ İletişim",EMAIL,()->email()));
+        content.addView(menuCard("↗ Uygulamayı paylaş","Arkadaşlarınla paylaş",this::shareApp));
+        TextView v=tv("BilgiliMedia • 1.4.9",11,muted(),false);v.setPadding(0,dp(12),0,dp(8));content.addView(v);
+    }
+
+    private void showSection(String sectionId){
+        Models.Section section=null; for(Models.Section s:config.sections) if(s.id.equals(sectionId)) section=s;
+        if(section==null)return;
+        StringBuilder names=new StringBuilder();
+        List<Models.Category> list=new ArrayList<>(); for(Models.Category c:config.categories) if(sectionId.equals(c.sectionId)) list.add(c);
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(16),dp(4),dp(16),dp(4));
+        for(Models.Category c:list){ TextView t=pill(c.name,false);t.setOnClickListener(v->{categoryFilter=c.name;showScreen("home");});box.addView(t); }
+        new AlertDialog.Builder(this).setTitle(section.title).setView(box).setPositiveButton("Kapat",null).show();
+    }
+
+    private View menuCard(String title,String subtitle,Runnable action){
+        LinearLayout c=card();c.setPadding(dp(13),dp(11),dp(13),dp(11));
+        c.addView(tv(title,16,text(),true));
+        if(subtitle!=null&&!subtitle.isEmpty()){TextView s=tv(subtitle,12,secondary(),false);s.setPadding(0,dp(2),0,0);c.addView(s);}
+        c.setClickable(true);c.setFocusable(true);c.setOnClickListener(v->action.run());
+        LinearLayout w=new LinearLayout(this);w.addView(c,margin(-1,-2,0,0,0,dp(8)));return w;
+    }
+
+    private void renderNotifications(){
+        renderHeader(false);
+        content.addView(tv("Bildirimler",24,text(),true));
+        TextView d=tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç. Teknik Firebase işlemleri arka planda otomatik yönetilir.",14,secondary(),false);d.setPadding(0,dp(3),0,dp(12));content.addView(d);
+        boolean master=prefs.getBoolean("notify_master",true);
+        LinearLayout status=card();status.setPadding(dp(13),dp(11),dp(13),dp(11));
+        status.addView(tv("▣ Bildirim durumu",14,text(),true));
+        TextView state=pill(master&&notificationsAllowed()?"Açık":"Kapalı",master&&notificationsAllowed());
+        state.setOnClickListener(v->{ if(Build.VERSION.SDK_INT>=33&&!notificationsAllowed()){requestNotificationPermissionIfNeeded();return;} prefs.edit().putBoolean("notify_master",!master).apply();NotificationSync.sync(this,config);renderNotifications();});status.addView(state);
+        content.addView(status,margin(-1,-2,0,0,0,dp(12)));
+
+        sectionTitle("Kategoriler","İstediğin kategorileri açıp kapatabilirsin");
+        Set<String> selected=getNotifyCategories();
+        if(selected.isEmpty()) content.addView(tv("Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.",12,secondary(),false));
+        for(Models.Category c:config.categories){
+            CheckBox box=new CheckBox(this);box.setText(c.name);box.setTextColor(text());box.setTextSize(15);box.setChecked(selected.contains(c.name));
+            box.setOnCheckedChangeListener((b,checked)->{Set<String> s=getNotifyCategories();if(checked)s.add(c.name);else s.remove(c.name);prefs.edit().putStringSet("notify_categories",new HashSet<>(s)).putBoolean("notify_categories_initialized",true).apply();NotificationSync.sync(this,config);});
+            content.addView(box);
+        }
+        TextView auto=tv("Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.",12,secondary(),false);auto.setPadding(0,dp(8),0,0);content.addView(auto);
+    }
+
+    private void renderSettings(){
+        renderHeader(false);
+        content.addView(tv("Ayarlar",24,text(),true));
+        TextView d=tv("Görünüm ve cihazında tutulan yerel verileri yönet.",14,secondary(),false);d.setPadding(0,dp(3),0,dp(12));content.addView(d);
+        sectionTitle("Görünüm","Temanı seç");
+        String theme=prefs.getString("theme","system");
+        content.addView(chipRow(new String[]{"Sistem","Açık","Koyu"},themeLabel(theme),v->{String label=(String)v;String val="Sistem".equals(label)?"system":"Koyu".equals(label)?"dark":"light";prefs.edit().putString("theme",val).apply();recreate();}));
+        sectionTitle("Bildirimler","Kategori bazlı bildirim tercihleri");
+        content.addView(menuCard("▣ Bildirim ayarları",notificationsAllowed()?"Açık":"Kapalı",()->showScreen("notifications")));
+        sectionTitle("Yerel veriler","Bu cihazda saklanan kişisel kullanım verileri");
+        int saved=countSavedArticles();int hist=historyIds().size();
+        content.addView(tv("Kaydedilenler: "+saved+" • Okuma geçmişi: "+hist+" kayıt",13,secondary(),false));
+        TextView clear=pill("Yerel kayıtları temizle",false);clear.setOnClickListener(v->confirm("Favoriler, geçmiş, tema ve yerel önbellek temizlensin mi?",this::clearLocalData));content.addView(clear);
+    }
+
+    private void renderPrivacy(){
+        renderHeader(false);content.addView(tv("Gizlilik",24,text(),true));
+        addInfo("BilgiliMedia Android uygulamasında veri kullanımının özeti.","");
