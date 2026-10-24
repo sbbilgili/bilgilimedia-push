@@ -29,7 +29,13 @@ final class DataRepository {
 
     private static final String TRUSTED_HOST = "bilgilimedia-60d6f.web.app";
     private static final int MAX_BYTES = 4_000_000;
+    private static final int MAX_ARTICLES = 1_000;
+    private static final int MAX_SOURCES_PER_ARTICLE = 20;
     private static final long CACHE_FRESH_MS = 300_000L;
+
+    private interface RawValidator {
+        void validate(String raw) throws Exception;
+    }
 
     static final class Snapshot {
         int version = 1;
@@ -42,21 +48,32 @@ final class DataRepository {
 
     static Snapshot load(Context context, boolean forceNetwork) throws Exception {
         String feed = loadRemoteOrFallback(
-                context, FEED_URL, "feed-cache.json", "feed.json", forceNetwork);
+                context,
+                FEED_URL,
+                "feed-cache.json",
+                "feed.json",
+                forceNetwork,
+                raw -> parseFeed(raw));
         String config = loadRemoteOrFallback(
-                context, CONFIG_URL, "config-cache.json", "app-config.json", forceNetwork);
+                context,
+                CONFIG_URL,
+                "config-cache.json",
+                "app-config.json",
+                forceNetwork,
+                raw -> AppConfig.parse(raw));
 
         Snapshot snapshot = parseFeed(feed);
+        AppConfig parsedConfig = AppConfig.parse(config);
         snapshot.feedRaw = feed;
         snapshot.configRaw = config;
-        snapshot.config = AppConfig.parse(config);
+        snapshot.config = parsedConfig;
 
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit()
                 .putInt("feed_version", snapshot.version)
                 .putString("content_cache", feed)
                 .putString("app_config_cache", config)
-                .putString("config_updated_at", snapshot.config.updatedAt)
+                .putString("config_updated_at", parsedConfig.updatedAt)
                 .putLong("content_updated_at", System.currentTimeMillis())
                 .apply();
         return snapshot;
@@ -64,52 +81,83 @@ final class DataRepository {
 
     static Snapshot parseFeed(String raw) throws Exception {
         JSONObject root = new JSONObject(raw);
-        Snapshot snapshot = new Snapshot();
-        snapshot.version = Math.max(1, root.optInt("version", 1));
-        snapshot.featuredId = root.optString("featuredId", "");
+        int version = root.optInt("version", 0);
+        if (version < 1) throw new IllegalArgumentException("Invalid feed version");
 
         JSONArray array = root.optJSONArray("articles");
-        if (array == null) return snapshot;
+        if (array == null || array.length() < 1 || array.length() > MAX_ARTICLES) {
+            throw new IllegalArgumentException("Invalid article count");
+        }
 
+        Snapshot snapshot = new Snapshot();
+        snapshot.version = version;
+        snapshot.featuredId = root.optString("featuredId", "").trim();
+
+        Set<String> ids = new HashSet<>();
         for (int i = 0; i < array.length(); i++) {
             JSONObject object = array.optJSONObject(i);
-            if (object == null) continue;
+            if (object == null) {
+                throw new IllegalArgumentException("Invalid article at index " + i);
+            }
 
             Models.Article article = new Models.Article();
-            article.id = object.optString("id", "");
-            article.categoryId = object.optString("categoryId", "");
-            article.category = object.optString("category", "Genel");
-            article.title = object.optString("title", "Yeni içerik");
-            article.summary = object.optString("summary", "");
-            article.body = object.optString("body", "");
+            article.id = object.optString("id", "").trim();
+            article.categoryId = object.optString("categoryId", "").trim();
+            article.category = object.optString("category", "").trim();
+            article.title = object.optString("title", "").trim();
+            article.summary = object.optString("summary", "").trim();
+            article.body = object.optString("body", "").trim();
+
+            if (article.id.isEmpty()
+                    || article.category.isEmpty()
+                    || article.title.isEmpty()
+                    || article.summary.isEmpty()
+                    || article.body.isEmpty()) {
+                throw new IllegalArgumentException("Article missing required data");
+            }
+            if (!ids.add(article.id)) {
+                throw new IllegalArgumentException("Duplicate article id: " + article.id);
+            }
+
             article.minutes = Math.max(1, object.optInt("minutes", 1));
-            article.imageUrl = httpsOrEmpty(object.optString("imageUrl", ""));
-            article.imageCredit = object.optString("imageCredit", "");
-            article.imageSource = httpsOrEmpty(object.optString("imageSource", ""));
-            article.videoUrl = httpsOrEmpty(object.optString("videoUrl", ""));
-            article.videoCredit = object.optString("videoCredit", "");
-            article.videoSource = httpsOrEmpty(object.optString("videoSource", ""));
+            article.imageUrl = optionalHttps(object.optString("imageUrl", ""), "imageUrl");
+            article.imageCredit = object.optString("imageCredit", "").trim();
+            article.imageSource = optionalHttps(
+                    object.optString("imageSource", ""), "imageSource");
+            article.videoUrl = optionalHttps(object.optString("videoUrl", ""), "videoUrl");
+            article.videoCredit = object.optString("videoCredit", "").trim();
+            article.videoSource = optionalHttps(
+                    object.optString("videoSource", ""), "videoSource");
 
             JSONArray sources = object.optJSONArray("sources");
-            if (sources != null) {
-                for (int j = 0; j < sources.length(); j++) {
-                    JSONObject sourceObject = sources.optJSONObject(j);
-                    if (sourceObject == null) continue;
+            if (sources == null
+                    || sources.length() < 1
+                    || sources.length() > MAX_SOURCES_PER_ARTICLE) {
+                throw new IllegalArgumentException("Invalid article sources: " + article.id);
+            }
 
-                    String sourceUrl = httpsOrEmpty(sourceObject.optString("url", ""));
-                    if (sourceUrl.isEmpty()) continue;
-
-                    Models.Source source = new Models.Source();
-                    source.title = sourceObject.optString("title", "Kaynak");
-                    source.url = sourceUrl;
-                    article.sources.add(source);
+            for (int j = 0; j < sources.length(); j++) {
+                JSONObject sourceObject = sources.optJSONObject(j);
+                if (sourceObject == null) {
+                    throw new IllegalArgumentException(
+                            "Invalid source for article: " + article.id);
                 }
+
+                Models.Source source = new Models.Source();
+                source.title = sourceObject.optString("title", "Kaynak").trim();
+                source.url = requiredHttps(
+                        sourceObject.optString("url", ""), "source URL");
+                if (source.title.isEmpty()) source.title = "Kaynak";
+                article.sources.add(source);
             }
 
-            if (!article.id.isEmpty() && !article.title.isEmpty()) {
-                snapshot.articles.add(article);
-            }
+            snapshot.articles.add(article);
         }
+
+        if (!snapshot.featuredId.isEmpty() && !ids.contains(snapshot.featuredId)) {
+            throw new IllegalArgumentException("featuredId is not present in articles");
+        }
+
         return snapshot;
     }
 
@@ -118,31 +166,35 @@ final class DataRepository {
             String url,
             String cacheName,
             String assetName,
-            boolean forceNetwork) throws Exception {
+            boolean forceNetwork,
+            RawValidator validator) throws Exception {
         File cache = new File(context.getFilesDir(), cacheName);
 
         if (!forceNetwork
                 && cache.exists()
                 && System.currentTimeMillis() - cache.lastModified() < CACHE_FRESH_MS) {
-            String cached = readFile(cache);
-            if (isJsonObject(cached)) return cached;
-            cache.delete();
+            try {
+                String cached = readFile(cache);
+                validator.validate(cached);
+                return cached;
+            } catch (Exception invalidCache) {
+                cache.delete();
+            }
         }
 
         try {
             String remote = fetch(url);
-            if (!isJsonObject(remote)) {
-                throw new IllegalStateException("Invalid JSON response");
-            }
+            validator.validate(remote);
             writeAtomic(cache, remote);
             return remote;
-        } catch (Exception networkFailure) {
+        } catch (Exception remoteFailure) {
             if (cache.exists()) {
                 try {
                     String cached = readFile(cache);
-                    if (isJsonObject(cached)) return cached;
-                } catch (Exception ignored) {
-                    // Continue to SharedPreferences/assets fallback.
+                    validator.validate(cached);
+                    return cached;
+                } catch (Exception invalidCache) {
+                    cache.delete();
                 }
             }
 
@@ -152,12 +204,17 @@ final class DataRepository {
                     ? "content_cache"
                     : "app_config_cache";
             String stored = prefs.getString(key, "");
-            if (stored != null && isJsonObject(stored)) return stored;
+            if (stored != null && !stored.isEmpty()) {
+                try {
+                    validator.validate(stored);
+                    return stored;
+                } catch (Exception ignored) {
+                    // Continue to the immutable bundled fallback.
+                }
+            }
 
             String bundled = read(context.getAssets().open(assetName));
-            if (!isJsonObject(bundled)) {
-                throw new IllegalStateException("Invalid bundled JSON: " + assetName);
-            }
+            validator.validate(bundled);
             return bundled;
         }
     }
@@ -228,24 +285,21 @@ final class DataRepository {
         }
     }
 
-    private static boolean isJsonObject(String raw) {
-        if (raw == null || raw.isEmpty()) return false;
-        try {
-            new JSONObject(raw);
-            return true;
-        } catch (Exception ignored) {
-            return false;
-        }
+    private static String optionalHttps(String value, String label) throws Exception {
+        String trimmed = value == null ? "" : value.trim();
+        if (trimmed.isEmpty()) return "";
+        return requiredHttps(trimmed, label);
     }
 
-    private static String httpsOrEmpty(String value) {
-        if (value == null || value.isEmpty()) return "";
-        try {
-            URL url = new URL(value);
-            return "https".equalsIgnoreCase(url.getProtocol()) ? value : "";
-        } catch (Exception ignored) {
-            return "";
+    private static String requiredHttps(String value, String label) throws Exception {
+        String trimmed = value == null ? "" : value.trim();
+        URL url = new URL(trimmed);
+        if (!"https".equalsIgnoreCase(url.getProtocol())
+                || url.getHost() == null
+                || url.getHost().isEmpty()) {
+            throw new IllegalArgumentException(label + " must use HTTPS");
         }
+        return trimmed;
     }
 
     static Set<String> getKnownIds(Context context) {
