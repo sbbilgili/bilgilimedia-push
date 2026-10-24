@@ -327,7 +327,7 @@ public class MainActivity extends Activity {
     }
 
     private View featuredCard(Models.Article a) {
-        LinearLayout card = card();
+        LinearLayout card = panel();
         card.setPadding(0,0,0,dp(14));
         FrameLayout cover = cover(a, dp(190));
         card.addView(cover, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(190)));
@@ -358,7 +358,7 @@ public class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         for (Models.Article a : list) {
-            LinearLayout c = card();
+            LinearLayout c = panel();
             c.setPadding(0,0,0,dp(10));
             FrameLayout cover = cover(a, dp(105));
             c.addView(cover, new LinearLayout.LayoutParams(dp(250), dp(105)));
@@ -385,7 +385,7 @@ public class MainActivity extends Activity {
         if (!config.sponsorEnabled) return;
         for (Models.Sponsor s : config.sponsors) {
             if (!s.enabled || (!s.placement.isEmpty() && !placement.equals(s.placement))) continue;
-            LinearLayout c = card();
+            LinearLayout c = panel();
             c.addView(tv("SPONSORLU", 10, secondary(), true));
             c.addView(tv(s.advertiser, 12, brand(), true));
             TextView h = tv(s.headline, 18, text(), true); h.setPadding(0,dp(4),0,dp(4)); c.addView(h);
@@ -463,7 +463,7 @@ public class MainActivity extends Activity {
     }
 
     private View articleCard(Models.Article a) {
-        LinearLayout c=card();
+        LinearLayout c=panel();
         c.setPadding(dp(12),dp(12),dp(12),dp(10));
         c.addView(tv(a.category+" • "+a.minutes+" DK"+(a.hasVideo()?" • ▶ VIDEO":""),11,brand(),true));
         TextView title=tv(a.title,18,text(),true); title.setPadding(0,dp(5),0,dp(4)); c.addView(title);
@@ -503,7 +503,7 @@ public class MainActivity extends Activity {
         for(String id:ids){
             Models.Article a=findArticle(id);
             if(a==null) continue;
-            LinearLayout box=card(); box.setPadding(dp(12),dp(10),dp(12),dp(10));
+            LinearLayout box=panel(); box.setPadding(dp(12),dp(10),dp(12),dp(10));
             box.addView(tv(a.title,16,text(),true));
             long ts=prefs.getLong("history_time_"+id,0);
             box.addView(tv(ts>0?fmt.format(new Date(ts)):"Okunma zamanı bilinmiyor",11,secondary(),false));
@@ -524,7 +524,7 @@ public class MainActivity extends Activity {
     }
 
     private View accountCard(Models.SocialAccount a) {
-        LinearLayout c=card(); c.setPadding(dp(13),dp(10),dp(10),dp(10));
+        LinearLayout c=panel(); c.setPadding(dp(13),dp(10),dp(10),dp(10));
         LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout words=new LinearLayout(this); words.setOrientation(LinearLayout.VERTICAL);
         words.addView(tv(a.name,16,text(),true));
@@ -581,7 +581,7 @@ public class MainActivity extends Activity {
     }
 
     private View menuCard(String title,String subtitle,Runnable action){
-        LinearLayout c=card();c.setPadding(dp(13),dp(11),dp(13),dp(11));
+        LinearLayout c=panel();c.setPadding(dp(13),dp(11),dp(13),dp(11));
         c.addView(tv(title,16,text(),true));
         if(subtitle!=null&&!subtitle.isEmpty()){TextView s=tv(subtitle,12,secondary(),false);s.setPadding(0,dp(2),0,0);c.addView(s);}
         c.setClickable(true);c.setFocusable(true);c.setOnClickListener(v->action.run());
@@ -593,7 +593,7 @@ public class MainActivity extends Activity {
         content.addView(tv("Bildirimler",24,text(),true));
         TextView d=tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç. Teknik Firebase işlemleri arka planda otomatik yönetilir.",14,secondary(),false);d.setPadding(0,dp(3),0,dp(12));content.addView(d);
         boolean master=prefs.getBoolean("notify_master",true);
-        LinearLayout status=card();status.setPadding(dp(13),dp(11),dp(13),dp(11));
+        LinearLayout status=panel();status.setPadding(dp(13),dp(11),dp(13),dp(11));
         status.addView(tv("▣ Bildirim durumu",14,text(),true));
         TextView state=pill(master&&notificationsAllowed()?"Açık":"Kapalı",master&&notificationsAllowed());
         state.setOnClickListener(v->{ if(Build.VERSION.SDK_INT>=33&&!notificationsAllowed()){requestNotificationPermissionIfNeeded();return;} prefs.edit().putBoolean("notify_master",!master).apply();NotificationSync.sync(this,config);renderNotifications();});status.addView(state);
@@ -785,7 +785,7 @@ public class MainActivity extends Activity {
     private int muted(){return dark?0xff7c8591:0xff929aa5;}
     private int brand(){return 0xffe50914;}
 
-    private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setBackground(round(card(),18));return c;}
+    private LinearLayout panel(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setBackground(round(card(),18));return c;}
     private GradientDrawable round(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
     private TextView tv(String s,float sp,int color,boolean bold){TextView v=new TextView(this);v.setText(s);v.setTextSize(sp);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setLineSpacing(0,1.08f);return v;}
     private TextView chip(String s,boolean selected){TextView v=tv(s,12,selected?Color.WHITE:text(),selected);v.setGravity(Gravity.CENTER);v.setPadding(dp(13),dp(8),dp(13),dp(8));v.setBackground(round(selected?brand():card(),18));v.setClickable(true);v.setFocusable(true);v.setContentDescription(s);v.setLayoutParams(margin(-2,-2,0,0,dp(7),0));return v;}
