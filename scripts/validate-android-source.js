@@ -71,7 +71,6 @@ requireAll(main, [
   'tv("Bugün ne keşfetmek istersin?", 28, text(), true)',
   'tv("Ara ve keşfet", 27, text(), true)',
   'new String[]{"Tümü","Yazı","Video","Favoriler"}',
-  'margin(-1, dp(54), 0, 0, 0, dp(12))',
   '"Favoriler".equals(typeFilter)',
   'count.setPadding(0, dp(12), 0, dp(4))',
   'tv("Kaydedilenler",27,text(),true)',
