@@ -133,16 +133,9 @@ async function main() {
     return;
   }
 
-  const rawCredential = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!rawCredential) {
-    throw new Error(
-      "FIREBASE_SERVICE_ACCOUNT GitHub secret is missing. No push was sent and state was not advanced."
-    );
-  }
-
-  const serviceAccount = JSON.parse(rawCredential);
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.applicationDefault(),
+    projectId: "bilgilimedia-60d6f",
   });
 
   let sent = 0;
