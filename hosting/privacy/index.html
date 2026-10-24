@@ -28,8 +28,8 @@
     <h2>2. Cihazda saklanan veriler</h2>
     <p>Kaydedilen içerikler, okuma geçmişi, son okunanlar, tema seçimi, bildirim tercihleri ve içerik önbelleği cihazda yerel olarak saklanabilir. Kullanıcı bu yerel kayıtları uygulama içinden temizleyebilir.</p>
 
-    <h2>3. Bildirimler ve Firebase Cloud Messaging</h2>
-    <p>Bildirimler etkinleştirildiğinde uygulama Google Firebase Cloud Messaging (FCM) hizmetini kullanır. FCM, bildirimi doğru uygulama kurulumuna ulaştırabilmek için bir kayıt belirteci (registration token) ve ilgili teknik cihaz/uygulama bilgilerini işleyebilir. Bildirim kategorisi tercihleri cihazda tutulur.</p>
+    <h2>3. Bildirimler ve Firebase</h2>
+    <p>Bildirim özelliği Google Firebase Cloud Messaging (FCM) kullanır. Firebase, mesajları doğru uygulama kurulumuna ulaştırmak ve topic aboneliklerini yönetmek için uygulama sürümü, Firebase user agent bilgileri ve kurulum başına oluşturulan Firebase Installation ID (FID) gibi teknik verileri işleyebilir. FCM kayıt belirteci de bildirim teslimi için kullanılabilir. FID, bir kişiyi doğrudan tanımlamak amacıyla oluşturulmaz; uygulamanın belirli bir kurulumunu tanımlar. Bildirim kategorisi tercihleri cihazda tutulur.</p>
 
     <h2>4. İçerik, görseller ve bağlantılar</h2>
     <p>Uygulama, BilgiliMedia içerik akışını internet üzerinden indirir. Görseller, videolar, kaynak bağlantıları ve sosyal medya bağlantıları üçüncü taraf hizmetlerden yüklenebilir veya bu hizmetlerde açılabilir. Bu durumda ilgili üçüncü tarafın kendi gizlilik şartları geçerlidir.</p>
@@ -38,12 +38,15 @@
     <p>Mevcut sürüm internet erişimi ve Android sürümüne bağlı olarak bildirim izni kullanır. Konum, rehber, kamera veya mikrofon izni talep edilmez.</p>
 
     <h2>6. Reklam ve analiz</h2>
-    <p>Mevcut sürümde reklam SDK'sı veya kullanıcı davranışını izlemek için ayrı bir analiz SDK'sı entegre değildir.</p>
+    <p>Mevcut sürümde reklam SDK'sı veya kullanıcı davranışını izlemek için ayrı bir analiz SDK'sı entegre değildir. Sponsorlu içerik altyapısı etkin olmadığı sürece uygulamada sponsor reklam kartı gösterilmez.</p>
 
-    <h2>7. Veri satışı</h2>
-    <p>BilgiliMedia bu uygulama üzerinden kişisel verileri satmaz.</p>
+    <h2>7. Veri paylaşımı ve satışı</h2>
+    <p>BilgiliMedia bu uygulama üzerinden kişisel verileri satmaz. Firebase, bildirim hizmetinin sağlanması için Google altyapısı üzerinde çalışır. Harici bağlantılar açıldığında ilgili üçüncü taraf hizmetlerin kendi veri işleme kuralları geçerli olabilir.</p>
 
-    <h2>8. İletişim</h2>
+    <h2>8. Yerel verileri temizleme</h2>
+    <p>Uygulamanın cihazda tuttuğu kaydedilen içerik, geçmiş ve tercih gibi yerel kayıtlar uygulama içinden temizlenebilir. Uygulamanın kaldırılması da uygulamaya ait yerel verileri Android'in normal uygulama kaldırma süreci kapsamında cihazdan kaldırır.</p>
+
+    <h2>9. İletişim</h2>
     <p>Gizlilik ile ilgili sorular için <a href="mailto:sukrubatuhanbilgili@gmail.com">sukrubatuhanbilgili@gmail.com</a> adresinden iletişime geçebilirsiniz.</p>
 
     <p><a href="/">BilgiliMedia ana sayfasına dön</a></p>
