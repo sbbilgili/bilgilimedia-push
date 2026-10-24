@@ -689,12 +689,14 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle(section.title).setView(box).setPositiveButton("Kapat",null).show();
     }
 
-    private View menuCard(String title,String subtitle,Runnable action){
-        LinearLayout c=panel();c.setPadding(dp(13),dp(11),dp(13),dp(11));
-        c.addView(tv(title,16,text(),true));
-        if(subtitle!=null&&!subtitle.isEmpty()){TextView s=tv(subtitle,12,secondary(),false);s.setPadding(0,dp(2),0,0);c.addView(s);}
-        c.setClickable(true);c.setFocusable(true);c.setOnClickListener(v->action.run());
-        LinearLayout w=new LinearLayout(this);w.addView(c,margin(-1,-2,0,0,0,dp(8)));return w;
+    private LinearLayout menuCard(String title, String subtitle, Runnable action) {
+        LinearLayout cardView = panel();
+        cardView.addView(tv(title, 16, text(), true));
+        cardView.addView(tv(subtitle == null ? "" : subtitle, 12, secondary(), false));
+        if (action != null) {
+            cardView.setOnClickListener(v -> action.run());
+        }
+        return cardView;
     }
 
     private void renderNotifications(){
@@ -747,17 +749,24 @@ public class MainActivity extends Activity {
     }
 
     private void renderAbout(){
-        renderHeader(false);content.addView(tv("Hakkında",27,text(),true));
+        renderHeader(false);
+        content.addView(tv("Hakkında",27,text(),true));
         content.addView(tv("BilgiliMedia • Bilgi, keşif ve medya",14,secondary(),false));
+
         sectionTitle("Sahiplik","Geliştirici bilgileri");
-        addInfo("Geliştirici ve Kurucu","Şükrü Batuhan Bilgili");addInfo("Marka","BilgiliMedia");
+        addInfo("Geliştirici ve Kurucu","Şükrü Batuhan Bilgili");
+        addInfo("Marka","BilgiliMedia");
         content.addView(tv("© 2026 Şükrü Batuhan Bilgili / BilgiliMedia",12,secondary(),false));
+
         sectionTitle("Uygulama","Sürüm ve paket bilgileri");
-        TextView version=menuLine("Sürüm","1.4.9 • versionCode 23");version.setOnLongClickListener(v->{showScreen("developer");return true;});content.addView(version);
-        content.addView(menuLine("Paket",getPackageName()));
-        content.addView(menuLine("Canlı içerik akışı","Sürüm "+feedVersion+" • "+articles.size()+" içerik"));
-        content.addView(menuLine("Android App Links","Etkin • web.app/content/…"));
-        sectionTitle("İletişim","");
+        LinearLayout version = menuCard("Sürüm","1.4.9 • versionCode 23",null);
+        version.setOnLongClickListener(v->{showScreen("developer");return true;});
+        content.addView(version);
+        content.addView(menuCard("Paket",getPackageName(),null));
+        content.addView(menuCard("Canlı içerik akışı","Sürüm "+feedVersion+" • "+articles.size()+" içerik",null));
+        content.addView(menuCard("Android App Links","Etkin • web.app/content/…",null));
+
+        sectionTitle("","İletişim");
         content.addView(menuCard("▣ Web sitemiz","spoo.me/bilgilimedia",()->openUrl(WEB)));
         content.addView(menuCard("✉ E-posta",EMAIL,this::email));
     }
@@ -1033,7 +1042,14 @@ public class MainActivity extends Activity {
         return c;
     }
     private GradientDrawable round(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
-    private TextView tv(String s,float sp,int color,boolean bold){TextView v=new TextView(this);v.setText(s);v.setTextSize(sp);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setLineSpacing(0,1.08f);return v;}
+    private TextView tv(String s, float sp, int color, boolean bold) {
+        TextView v = new TextView(this);
+        v.setText(s);
+        v.setTextSize(sp);
+        v.setTextColor(color);
+        if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        return v;
+    }
     private TextView chip(String s, boolean selected) {
         return pill(s, selected);
     }
@@ -1061,7 +1077,9 @@ public class MainActivity extends Activity {
         }
     }
     private TextView empty(String s){TextView v=tv(s,14,secondary(),false);v.setGravity(Gravity.CENTER);v.setPadding(dp(14),dp(30),dp(14),dp(30));return v;}
-    private void addInfo(String title,String value){content.addView(menuLine(title,value));}
+    private void addInfo(String title, String value) {
+        content.addView(menuCard(title, value, null));
+    }
     private TextView menuLine(String title,String value){TextView v=tv(title+"\n"+value,14,text(),false);v.setPadding(dp(13),dp(10),dp(13),dp(10));v.setBackground(round(card(),14));v.setLayoutParams(margin(-1,-2,0,0,0,dp(7)));return v;}
     private LinearLayout.LayoutParams margin(int w,int h,int l,int t,int r,int b){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(w,h);p.setMargins(dpv(l),dpv(t),dpv(r),dpv(b));return p;}
     private int dpv(int v){if(v<0)return v;return dp(v);}
