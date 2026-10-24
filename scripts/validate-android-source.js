@@ -257,7 +257,8 @@ requireAll(job, [
 requireAll(data, [
   'new AtomicFile(file)',
   'connection.setInstanceFollowRedirects(false)',
-  '"bilgilimedia-60d6f.web.app".equalsIgnoreCase',
+  'TRUSTED_HOST = "bilgilimedia-60d6f.web.app"',
+  'TRUSTED_HOST.equalsIgnoreCase(url.getHost())',
   'httpsOrEmpty',
   'Invalid bundled JSON'
 ], "Hardened content transport/cache contract");
