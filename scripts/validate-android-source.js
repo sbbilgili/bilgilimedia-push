@@ -271,16 +271,26 @@ requireAll(data, [
   'TRUSTED_HOST = "bilgilimedia-60d6f.web.app"',
   'TRUSTED_HOST.equalsIgnoreCase(url.getHost())',
   'MAX_ARTICLES = 1_000',
-  'RawValidator validator',
-  'validator.validate(remote);',
-  'validator.validate(bundled);',
+  'STABLE_ID_PATTERN',
+  'Snapshot remote = buildSnapshot(remoteFeed, remoteConfig);',
+  'validateFeedAgainstConfig(snapshot, parsedConfig);',
+  'cachePairIsFresh(feedCache, configCache)',
+  'deleteCachePair(feedCache, configCache)',
+  'Snapshot bundled = buildSnapshot(bundledFeed, bundledConfig);',
   'Duplicate article id:',
   'requiredHttps'
-], "Hardened content transport/cache contract");
-const remoteValidationIndex = data.indexOf('validator.validate(remote);');
-const remoteWriteIndex = data.indexOf('writeAtomic(cache, remote);');
-if (remoteValidationIndex < 0 || remoteWriteIndex < 0 || remoteValidationIndex > remoteWriteIndex) {
-  throw new Error("Remote content must pass semantic validation before it is cached");
+], "Hardened paired content transport/cache contract");
+const remoteValidationIndex = data.indexOf('Snapshot remote = buildSnapshot(remoteFeed, remoteConfig);');
+const remoteFeedWriteIndex = data.indexOf('writeAtomic(feedCache, remoteFeed);');
+const remoteConfigWriteIndex = data.indexOf('writeAtomic(configCache, remoteConfig);');
+if (
+  remoteValidationIndex < 0 ||
+  remoteFeedWriteIndex < 0 ||
+  remoteConfigWriteIndex < 0 ||
+  remoteValidationIndex > remoteFeedWriteIndex ||
+  remoteValidationIndex > remoteConfigWriteIndex
+) {
+  throw new Error("Remote feed/config pair must be validated together before either cache is written");
 }
 
 requireAll(appConfig, [
