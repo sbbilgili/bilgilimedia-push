@@ -157,7 +157,7 @@ jobs:
                       load_alignments = [
                           int(match.group(1))
                           for line in objdump_text.splitlines()
-                          if (match := re.search(r"^\\s*LOAD\\s+.*\\balign 2\\*\\*(\\d+)\\s*$", line))
+                          if (match := re.search(r"^\s*LOAD\s+.*\balign 2\*\*(\d+)\s*$", line))
                       ]
                       if not load_alignments:
                           raise SystemExit(f"No ELF LOAD segments found in {name}")
