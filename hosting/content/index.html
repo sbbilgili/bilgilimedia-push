@@ -22,7 +22,7 @@
   </section>
 </main>
 <script>
-const FEED="https://superjsonblob.com/api/jsonBlob/075eca5d-5acd-49fe-87ba-579a4c6ab434";
+const FEED="/feed.json";
 const parts=location.pathname.split("/").filter(Boolean);
 const id=parts[0]==="content"&&parts[1]?decodeURIComponent(parts[1]):new URLSearchParams(location.search).get("id");
 const root=document.getElementById("content");
