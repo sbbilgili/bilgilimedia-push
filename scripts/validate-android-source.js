@@ -287,6 +287,17 @@ requireAll(main, [
   'io.shutdownNow()'
 ], "Image/lifecycle safety contract");
 
+requireAll(main, [
+  'private void markCurrentContentKnown()',
+  'if (!master) markCurrentContentKnown();',
+  'if (enablingFirstCategory) markCurrentContentKnown();',
+  'if(ok)markCurrentContentKnown();'
+], "Notification no-backfill contract");
+const knownRefreshCount = (main.match(/markCurrentContentKnown\(\);/g) || []).length;
+if (knownRefreshCount < 4) {
+  throw new Error("Foreground/re-enable notification baseline must be refreshed in every required path");
+}
+
 const forbiddenPermissions = [
   "android.permission.ACCESS_FINE_LOCATION",
   "android.permission.ACCESS_COARSE_LOCATION",
