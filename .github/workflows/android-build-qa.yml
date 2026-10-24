@@ -1,0 +1,74 @@
+name: Build Android 1.4.9 QA
+
+on:
+  push:
+    branches:
+      - android-production-rebuild-1-4-9
+    paths:
+      - "android/**"
+      - ".github/workflows/android-build-qa.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "android/**"
+      - ".github/workflows/android-build-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android-qa:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -type f -path "*/bin/sdkmanager" | sort -V | tail -1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Prepare offline fallbacks
+        shell: bash
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp content/feed.json android/app/src/main/assets/feed.json
+          cp hosting/app-config.json android/app/src/main/assets/app-config.json
+
+      - name: Build QA APK
+        working-directory: android
+        run: gradle --no-daemon clean :app:assembleQaDebug
+
+      - name: Verify QA artifact
+        shell: bash
+        run: |
+          APK="android/app/build/outputs/apk/qa/debug/app-qa-debug.apk"
+          test -f "$APK"
+          unzip -t "$APK" >/dev/null
+          sha256sum "$APK"
+
+      - name: Upload QA APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: BilgiliMedia-1.4.9-QA
+          if-no-files-found: error
+          path: android/app/build/outputs/apk/qa/debug/app-qa-debug.apk
