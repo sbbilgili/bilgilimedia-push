@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -38,12 +38,30 @@ jobs:
           project_id: bilgilimedia-60d6f
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
       - name: Install dependencies
         run: npm install --omit=dev --no-audit --no-fund
+
+      - name: Verify Firebase Admin ADC
+        shell: bash
+        run: |
+          node <<'NODE'
+          const admin = require("firebase-admin");
+          admin.credential.applicationDefault().getAccessToken()
+            .then((token) => {
+              if (!token || !token.access_token) {
+                throw new Error("No Google OAuth access token returned");
+              }
+              console.log("Firebase Admin ADC token acquisition succeeded.");
+            })
+            .catch((error) => {
+              console.error(error);
+              process.exit(1);
+            });
+          NODE
 
       - name: Check repository feed and send topic push
         run: node scripts/check-feed.js
