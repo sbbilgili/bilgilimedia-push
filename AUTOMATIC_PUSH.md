@@ -9,6 +9,7 @@ BilgiliMedia bildirim akışı, GitHub deposundaki `content/feed.json` değişik
 - Push olayında mevcut `feed.json`, olaydan önceki commit'teki `feed.json` ile karşılaştırılır.
 - Yalnızca yeni eklenen içerik ID'leri bildirim adayı olur; geçmiş içerikler yeniden gönderilmez.
 - Kategori -> FCM topic eşleşmesi `hosting/app-config.json` dosyasından alınır.
+- Schema v2 ile önce sabit `categoryId`, yoksa geriye dönük uyumluluk için görünen `category` adı kullanılır.
 - Kapalı veya eşleşmemiş kategoriler için bildirim gönderilmez.
 - Workflow her çalışmada FCM erişimini dry-run ile doğrular; bu kontrol gerçek bildirim teslim etmez.
 - Android uygulaması data-only yüksek öncelikli FCM mesajını alır ve ilgili içeriği açacak yerel bildirimi oluşturur.
@@ -37,5 +38,7 @@ Kullanılan yöntem:
 - Teknoloji -> `teknoloji`
 - Animasyon -> `animasyon`
 - Çizgi Film -> `cizgifilm`
+- AI -> `ai`
+- HIGGS -> `higgs`
 
-Yeni kategori eklenirken `app-config.json` içinde benzersiz ve geçerli bir FCM topic tanımlanmalıdır.
+Yeni kategori eklenirken `app-config.json` içinde benzersiz ve geçerli bir sabit `id` ve FCM `topic` tanımlanmalıdır.

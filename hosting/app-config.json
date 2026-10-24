@@ -1,54 +1,219 @@
 {
-  "schemaVersion": 1,
-  "updatedAt": "2026-10-24T16:20:00+03:00",
+  "schemaVersion": 2,
+  "updatedAt": "2026-10-24T19:21:00+03:00",
+  "compatibility": {
+    "minimumClientSchemaVersion": 1,
+    "legacyCategoryList": true,
+    "navigationSchemaVersion": 1,
+    "fallbackRootScreen": "home"
+  },
+  "sections": [
+    {
+      "id": "bilgi",
+      "title": "Bilgi & Belgesel",
+      "enabled": true,
+      "order": 10
+    },
+    {
+      "id": "yasam",
+      "title": "Yaşam",
+      "enabled": true,
+      "order": 20
+    },
+    {
+      "id": "yaratici",
+      "title": "Yaratıcı & Dijital",
+      "enabled": true,
+      "order": 30
+    }
+  ],
   "categories": [
     {
+      "id": "genel",
       "name": "Genel",
       "topic": "genel",
+      "sectionId": "bilgi",
+      "order": 10,
       "enabled": true
     },
     {
+      "id": "belgesel",
       "name": "Belgesel",
       "topic": "belgesel",
+      "sectionId": "bilgi",
+      "order": 20,
       "enabled": true
     },
     {
+      "id": "tarih",
       "name": "Tarih",
       "topic": "tarih",
+      "sectionId": "bilgi",
+      "order": 30,
       "enabled": true
     },
     {
+      "id": "doga",
       "name": "Doğa",
       "topic": "doga",
+      "sectionId": "bilgi",
+      "order": 40,
       "enabled": true
     },
     {
-      "name": "Yemek",
-      "topic": "yemek",
-      "enabled": true
-    },
-    {
+      "id": "teknoloji",
       "name": "Teknoloji",
       "topic": "teknoloji",
+      "sectionId": "bilgi",
+      "order": 50,
       "enabled": true
     },
     {
+      "id": "yemek",
+      "name": "Yemek",
+      "topic": "yemek",
+      "sectionId": "yasam",
+      "order": 10,
+      "enabled": true
+    },
+    {
+      "id": "animasyon",
       "name": "Animasyon",
       "topic": "animasyon",
+      "sectionId": "yaratici",
+      "order": 10,
       "enabled": true
     },
     {
+      "id": "cizgifilm",
       "name": "Çizgi Film",
       "topic": "cizgifilm",
+      "sectionId": "yaratici",
+      "order": 20,
+      "enabled": true
+    },
+    {
+      "id": "ai",
+      "name": "AI",
+      "topic": "ai",
+      "sectionId": "yaratici",
+      "order": 30,
+      "enabled": true
+    },
+    {
+      "id": "higgs",
+      "name": "HIGGS",
+      "topic": "higgs",
+      "sectionId": "yaratici",
+      "order": 40,
       "enabled": true
     }
   ],
+  "navigation": {
+    "version": 1,
+    "maxDepth": 4,
+    "items": [
+      {
+        "id": "home",
+        "type": "screen",
+        "screen": "home",
+        "title": "Ana Sayfa",
+        "order": 10,
+        "enabled": true
+      },
+      {
+        "id": "content",
+        "type": "group",
+        "title": "İçerikler",
+        "order": 20,
+        "enabled": true,
+        "children": [
+          {
+            "id": "content-bilgi",
+            "type": "group",
+            "title": "Bilgi & Belgesel",
+            "order": 10,
+            "enabled": true,
+            "children": [
+              {"id": "nav-genel", "type": "category", "categoryId": "genel", "title": "Genel", "order": 10, "enabled": true},
+              {"id": "nav-belgesel", "type": "category", "categoryId": "belgesel", "title": "Belgesel", "order": 20, "enabled": true},
+              {"id": "nav-tarih", "type": "category", "categoryId": "tarih", "title": "Tarih", "order": 30, "enabled": true},
+              {"id": "nav-doga", "type": "category", "categoryId": "doga", "title": "Doğa", "order": 40, "enabled": true},
+              {"id": "nav-teknoloji", "type": "category", "categoryId": "teknoloji", "title": "Teknoloji", "order": 50, "enabled": true}
+            ]
+          },
+          {
+            "id": "content-yasam",
+            "type": "group",
+            "title": "Yaşam",
+            "order": 20,
+            "enabled": true,
+            "children": [
+              {"id": "nav-yemek", "type": "category", "categoryId": "yemek", "title": "Yemek", "order": 10, "enabled": true}
+            ]
+          },
+          {
+            "id": "content-yaratici",
+            "type": "group",
+            "title": "Yaratıcı & Dijital",
+            "order": 30,
+            "enabled": true,
+            "children": [
+              {"id": "nav-animasyon", "type": "category", "categoryId": "animasyon", "title": "Animasyon", "order": 10, "enabled": true},
+              {"id": "nav-cizgifilm", "type": "category", "categoryId": "cizgifilm", "title": "Çizgi Film", "order": 20, "enabled": true},
+              {"id": "nav-ai", "type": "category", "categoryId": "ai", "title": "AI", "order": 30, "enabled": true},
+              {"id": "nav-higgs", "type": "category", "categoryId": "higgs", "title": "HIGGS", "order": 40, "enabled": true}
+            ]
+          }
+        ]
+      },
+      {
+        "id": "library",
+        "type": "group",
+        "title": "Kütüphane",
+        "order": 30,
+        "enabled": true,
+        "children": [
+          {"id": "saved", "type": "screen", "screen": "saved", "title": "Favoriler", "order": 10, "enabled": true},
+          {"id": "history", "type": "screen", "screen": "history", "title": "Son Okunanlar", "order": 20, "enabled": true}
+        ]
+      },
+      {
+        "id": "accounts",
+        "type": "screen",
+        "screen": "accounts",
+        "title": "Sosyal Hesaplar",
+        "order": 40,
+        "enabled": true
+      },
+      {
+        "id": "notifications",
+        "type": "screen",
+        "screen": "notifications",
+        "title": "Bildirimler",
+        "order": 50,
+        "enabled": true
+      },
+      {
+        "id": "more",
+        "type": "group",
+        "title": "Daha",
+        "order": 60,
+        "enabled": true,
+        "children": [
+          {"id": "about", "type": "screen", "screen": "about", "title": "Hakkında", "order": 10, "enabled": true}
+        ]
+      }
+    ]
+  },
   "extraPages": [],
   "features": {
     "notifications": true,
     "history": true,
     "saved": true,
-    "accounts": true
+    "accounts": true,
+    "remoteNavigation": true,
+    "nestedNavigation": true
   },
   "sponsorAds": {
     "enabled": false,
