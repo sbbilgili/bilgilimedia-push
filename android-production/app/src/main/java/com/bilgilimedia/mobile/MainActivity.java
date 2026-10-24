@@ -77,6 +77,7 @@ public class MainActivity extends Activity {
     private LinearLayout bottomNav;
     private ScrollView scroll;
     private String screen = "home";
+    private String previousScreen = "home";
     private String query = "";
     private String typeFilter = "Tümü";
     private String sortFilter = "Yeni";
@@ -109,11 +110,20 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if ("article".equals(screen)) {
+            showScreen(previousScreen == null ? "home" : previousScreen);
+            return;
+        }
+        if ("history".equals(screen) || "notifications".equals(screen) || "settings".equals(screen)
+                || "privacy".equals(screen) || "about".equals(screen) || "developer".equals(screen)) {
+            showScreen("more");
+            return;
+        }
         if (!"home".equals(screen)) {
             showScreen("home");
-        } else {
-            Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show();
+            return;
         }
+        Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show();
     }
 
     private void buildShell() {
@@ -874,6 +884,7 @@ public class MainActivity extends Activity {
     private void openArticle(Models.Article a) {
         boolean enteringArticle = !"article".equals(screen);
         if (enteringArticle) {
+            previousScreen = screen;
             addHistory(a.id);
             incrementRead(a.id);
         }
@@ -886,7 +897,7 @@ public class MainActivity extends Activity {
 
         TextView back = tv("← Geri", 14, brand(), true);
         back.setPadding(0, 4, 0, dp(14));
-        back.setOnClickListener(v -> showScreen("home"));
+        back.setOnClickListener(v -> showScreen(previousScreen == null ? "home" : previousScreen));
         content.addView(back);
 
         content.addView(cover(a, 175, true));
