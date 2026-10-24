@@ -1,0 +1,27 @@
+{
+  "project": "BilgiliMedia Android",
+  "archive_date": "2026-10-24",
+  "golden_apk": {
+    "name": "BilgiliMedia_148_DIREKT.apk",
+    "sha256": "dca81609a1df783de5606ee646af4bd672121aed0188a84886db1c0652ccae76",
+    "versionName": "1.4.8",
+    "versionCode": 22,
+    "package": "com.bilgilimedia.mobile.media.preview",
+    "library_path": "/BilgiliMedia/Recovery_2026-10-24/BilgiliMedia_148_DIREKT.apk"
+  },
+  "github": {
+    "repository": "sbbilgili/bilgilimedia-push",
+    "authoritative_branch": "main",
+    "rejected_branch": "android-production-rebuild-1-4-9",
+    "rejected_pr": 18
+  },
+  "firebase": {
+    "project_id": "bilgilimedia-60d6f",
+    "project_number": "190776938532",
+    "production_package": "com.bilgilimedia.mobile",
+    "production_app_id": "1:190776938532:android:714bfdfa9b2ab78c4788b1",
+    "preview_package": "com.bilgilimedia.mobile.media.preview",
+    "preview_app_id": "1:190776938532:android:56fff2dc4359a7ac4788b1"
+  },
+  "critical_note": "Exact original 1.4.8 native source recovery is not complete. Golden APK is authoritative until exact recovery is finished."
+}
