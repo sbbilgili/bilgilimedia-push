@@ -589,39 +589,73 @@ public class MainActivity extends Activity {
     private void renderSaved() {
         renderHeader(false);
         content.addView(tv("Kaydedilenler",27,text(),true));
-        TextView d=tv("Favorilerin bu cihazda tutulur.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(12)); content.addView(d);
-        Set<String> saved=getStringSet("saved");
-        int count=0;
-        for(Models.Article a:articles) if(saved.contains("a:"+a.id) || saved.contains(a.id)){ content.addView(articleCard(a)); count++; }
-        if(count==0) content.addView(empty("Henüz içerik kaydetmedin. ♡ simgesine dokunarak favori oluşturabilirsin."));
+        content.addView(tv("Favorilerin bu cihazda tutulur.",14,secondary(),false));
 
-        List<Models.SocialAccount> savedAccounts=new ArrayList<>();
-        for(Models.SocialAccount a:accounts) if(saved.contains("p:"+a.url)) savedAccounts.add(a);
-        if(!savedAccounts.isEmpty()){
-            sectionTitle("Kaydedilen hesaplar","Hızlı erişim");
-            for(Models.SocialAccount a:savedAccounts) content.addView(accountCard(a));
+        int savedCount = 0;
+        for (Models.Article a : articles) {
+            if (isSavedArticle(a.id)) {
+                content.addView(articleCard(a));
+                savedCount++;
+            }
+        }
+        if (savedCount == 0) {
+            TextView emptySaved = tv("Henüz içerik kaydetmedin. ♡ simgesine dokunarak favori oluşturabilirsin.", 15, secondary(), false);
+            emptySaved.setPadding(0, dp(60), 0, dp(30));
+            content.addView(emptySaved);
+        }
+
+        sectionTitle("Kaydedilen hesaplar","Hızlı erişim");
+        for (int index = 0; index < accounts.size(); index++) {
+            if (isSavedAccount(index)) content.addView(accountCard(accounts.get(index)));
         }
     }
 
     private void renderHistory() {
         renderHeader(false);
         content.addView(tv("Okuma Geçmişi",27,text(),true));
-        TextView d=tv("Daha önce açtığın içerikler ve son okunma zamanları.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
-        List<String> ids=historyIds();
-        if(ids.isEmpty()) content.addView(empty("Henüz okuma geçmişin yok."));
-        DateFormat fmt=new SimpleDateFormat("dd MMM yyyy • HH:mm",new Locale("tr","TR"));
-        for(String id:ids){
-            Models.Article a=findArticle(id);
-            if(a==null) continue;
-            LinearLayout box=panel(); box.setPadding(dp(12),dp(10),dp(12),dp(10));
-            box.addView(tv(a.title,16,text(),true));
-            long ts=prefs.getLong("history_time_"+id,0);
-            box.addView(tv(ts>0?fmt.format(new Date(ts)):"Okunma zamanı bilinmiyor",11,secondary(),false));
-            box.setOnClickListener(v->openArticle(a));
-            content.addView(box,margin(-1,-2,0,0,0,dp(8)));
+        content.addView(tv("Daha önce açtığın içerikler ve son okunma zamanları.",14,secondary(),false));
+
+        List<String> ids = historyIds();
+        if (ids.isEmpty()) {
+            TextView emptyHistory = tv("Henüz okuma geçmişin yok.", 15, secondary(), false);
+            emptyHistory.setPadding(0, dp(55), 0, dp(30));
+            content.addView(emptyHistory);
+            return;
         }
-        if(!ids.isEmpty()){
-            TextView clear=pill("Geçmişi temizle",false); clear.setOnClickListener(v->confirm("Okuma geçmişi temizlensin mi?",()->{prefs.edit().remove("history_all").apply();renderHistory();})); content.addView(clear);
+
+        TextView clear = pill("Geçmişi temizle", false);
+        clear.setOnClickListener(v -> confirm("Okuma geçmişi temizlensin mi?", () -> {
+            prefs.edit().remove("history_all").apply();
+            renderHistory();
+        }));
+        content.addView(clear);
+
+        DateFormat format = new SimpleDateFormat("dd MMM yyyy • HH:mm", new Locale("tr","TR"));
+        int rendered = 0;
+        for (String id : ids) {
+            Models.Article a = findArticle(id);
+            if (a == null) continue;
+
+            LinearLayout cardView = panel();
+            cardView.setPadding(0, 0, 0, dp(10));
+            cardView.addView(cover(a, 92, false));
+
+            LinearLayout body = new LinearLayout(this);
+            body.setOrientation(LinearLayout.VERTICAL);
+            body.setPadding(dp(14), dp(10), dp(14), dp(6));
+            body.addView(tv(a.title, 17, text(), true));
+
+            long ts = prefs.getLong("history_time_" + id, 0L);
+            String when = ts > 0 ? format.format(new Date(ts)) : "Okunma zamanı bilinmiyor";
+            body.addView(tv(when + " • " + readCount(id) + " okuma", 12, secondary(), false));
+            cardView.addView(body);
+            cardView.setOnClickListener(v -> openArticle(a));
+            content.addView(cardView);
+            rendered++;
+        }
+
+        if (rendered == 0) {
+            content.addView(tv("Geçmişteki içerikler artık canlı listede bulunmuyor.",14,secondary(),false));
         }
     }
 
@@ -644,9 +678,9 @@ public class MainActivity extends Activity {
         open.setOnClickListener(v -> openSocial(a));
         actions.addView(open, new LinearLayout.LayoutParams(0, dp(38), 1f));
 
-        TextView fav = tv(isSavedAccount(a.url) ? "♥" : "♡", 22, isSavedAccount(a.url) ? brand() : secondary(), true);
+        TextView fav = tv(isSavedAccount(accounts.indexOf(a)) ? "♥" : "♡", 22, isSavedAccount(accounts.indexOf(a)) ? brand() : secondary(), true);
         fav.setGravity(Gravity.CENTER);
-        fav.setOnClickListener(v -> { toggleSavedAccount(a.url); showScreen(screen); });
+        fav.setOnClickListener(v -> { toggleSavedAccount(accounts.indexOf(a)); showScreen(screen); });
         actions.addView(fav, new LinearLayout.LayoutParams(dp(44), dp(38)));
 
         cardView.addView(actions);
@@ -798,9 +832,15 @@ public class MainActivity extends Activity {
     }
 
     private void openArticle(Models.Article a) {
+        boolean enteringArticle = !"article".equals(screen);
+        if (enteringArticle) {
+            addHistory(a.id);
+            incrementRead(a.id);
+        }
         screen = "article";
-        addHistory(a.id);
-        incrementRead(a.id);
+
+        addRecent(a.id);
+
         content.removeAllViews();
         renderBottomNav();
 
@@ -822,6 +862,7 @@ public class MainActivity extends Activity {
 
         if (!a.imageCredit.isEmpty()) {
             TextView credit = tv("Görsel: " + a.imageCredit + (!a.imageSource.isEmpty() ? " • Kaynağı aç" : ""), 11, secondary(), false);
+            credit.setPadding(0, dp(10), 0, dp(4));
             if (!a.imageSource.isEmpty()) credit.setOnClickListener(v -> openUrl(a.imageSource));
             content.addView(credit);
         }
@@ -842,7 +883,7 @@ public class MainActivity extends Activity {
             video.setPadding(dp(14), 0, dp(14), 0);
             video.setOnClickListener(v -> openUrl(a.videoUrl));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50));
-            lp.setMargins(0, dp(10), 0, dp(4));
+            lp.setMargins(0, dp(10), 0, dp(5));
             content.addView(video, lp);
 
             if (!a.videoCredit.isEmpty()) {
@@ -991,21 +1032,51 @@ public class MainActivity extends Activity {
     private Models.Article findArticle(String id){for(Models.Article a:articles)if(a.id.equals(id))return a;return null;}
     private List<Models.Article> filterCategory(String category){List<Models.Article> out=new ArrayList<>();for(Models.Article a:articles)if(category.equals(a.category))out.add(a);return out;}
     private List<Models.Article> limit(List<Models.Article> src,int max){return new ArrayList<>(src.subList(0,Math.min(max,src.size())));}
-    private List<Models.Article> historyArticles(){List<Models.Article> out=new ArrayList<>();for(String id:historyIds()){Models.Article a=findArticle(id);if(a!=null)out.add(a);}return out;}
+    private List<Models.Article> historyArticles() {
+        List<Models.Article> out = new ArrayList<>();
+        for (String id : recentIds()) {
+            Models.Article a = findArticle(id);
+            if (a != null) out.add(a);
+        }
+        return out;
+    }
 
     private void openPendingArticle(){if(pendingArticleId==null||pendingArticleId.isEmpty()||articles.isEmpty())return;Models.Article a=findArticle(pendingArticleId);if(a!=null){pendingArticleId="";openArticle(a);}}
     private String extractArticleId(Intent intent){if(intent==null)return "";String id=intent.getStringExtra("open_article_id");if(id!=null&&!id.isEmpty())return id;Uri data=intent.getData();if(data!=null&&"https".equalsIgnoreCase(data.getScheme())&&"bilgilimedia-60d6f.web.app".equalsIgnoreCase(data.getHost())){List<String>s=data.getPathSegments();if(s.size()>=2&&"content".equals(s.get(0)))return s.get(1);}return "";}
 
     private void addHistory(String id){List<String> ids=historyIds();ids.remove(id);ids.add(0,id);while(ids.size()>100)ids.remove(ids.size()-1);prefs.edit().putString("history_all",TextUtils.join("|",ids)).putLong("history_time_"+id,System.currentTimeMillis()).apply();}
     private List<String> historyIds(){String raw=prefs.getString("history_all","");List<String> out=new ArrayList<>();if(raw==null||raw.isEmpty())return out;for(String x:raw.split("\\|"))if(!x.isEmpty())out.add(x);return out;}
+    private List<String> recentIds() {
+        String raw = prefs.getString("recent", "");
+        List<String> out = new ArrayList<>();
+        if (raw == null || raw.isEmpty()) return out;
+        for (String id : raw.split("\\|")) if (!id.isEmpty()) out.add(id);
+        return out;
+    }
+
+    private void addRecent(String id) {
+        List<String> ids = recentIds();
+        ids.remove(id);
+        ids.add(0, id);
+        while (ids.size() > 8) ids.remove(ids.size() - 1);
+        prefs.edit().putString("recent", TextUtils.join("|", ids)).apply();
+    }
+
     private void incrementRead(String id){prefs.edit().putInt("reads_"+id,readCount(id)+1).apply();}
     private int readCount(String id){return prefs.getInt("reads_"+id,0);}
 
     private Set<String> getStringSet(String key){return new LinkedHashSet<>(prefs.getStringSet(key,new HashSet<>()));}
     private boolean isSavedArticle(String id){Set<String>s=getStringSet("saved");return s.contains("a:"+id)||s.contains(id);}
-    private boolean isSavedAccount(String url){return getStringSet("saved").contains("p:"+url);}
+    private boolean isSavedAccount(int index) {
+        return getStringSet("saved").contains("p:" + index);
+    }
     private void toggleSavedArticle(String id){Set<String>s=getStringSet("saved");String k="a:"+id;if(s.contains(k)||s.contains(id)){s.remove(k);s.remove(id);}else s.add(k);prefs.edit().putStringSet("saved",new HashSet<>(s)).apply();}
-    private void toggleSavedAccount(String url){Set<String>s=getStringSet("saved");String k="p:"+url;if(s.contains(k))s.remove(k);else s.add(k);prefs.edit().putStringSet("saved",new HashSet<>(s)).apply();}
+    private void toggleSavedAccount(int index) {
+        Set<String> saved = getStringSet("saved");
+        String key = "p:" + index;
+        if (saved.contains(key)) saved.remove(key); else saved.add(key);
+        prefs.edit().putStringSet("saved", new HashSet<>(saved)).apply();
+    }
     private int countSavedArticles(){int n=0;for(Models.Article a:articles)if(isSavedArticle(a.id))n++;return n;}
     private Set<String> getNotifyCategories(){return new LinkedHashSet<>(prefs.getStringSet("notify_categories",new HashSet<>()));}
 
@@ -1024,7 +1095,7 @@ public class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_NOTIFICATION){boolean ok=grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED;prefs.edit().putBoolean("notify_master",ok).apply();NotificationSync.sync(this,config);Toast.makeText(this,ok?"Bildirim izni verildi":"Bildirim izni verilmedi",Toast.LENGTH_SHORT).show();}}
     private boolean notificationsAllowed(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)return false;android.app.NotificationManager nm=(android.app.NotificationManager)getSystemService(NOTIFICATION_SERVICE);return nm==null||Build.VERSION.SDK_INT<24||nm.areNotificationsEnabled();}
 
-    private void clearLocalData(){prefs.edit().remove("saved").remove("history_all").remove("theme").remove("content_cache").remove("app_config_cache").apply();File f=new File(getFilesDir(),"feed-cache.json");if(f.exists())f.delete();File c=new File(getFilesDir(),"config-cache.json");if(c.exists())c.delete();Toast.makeText(this,"Yerel kayıtlar temizlendi",Toast.LENGTH_SHORT).show();recreate();}
+    private void clearLocalData(){prefs.edit().remove("saved").remove("history_all").remove("recent").remove("theme").remove("content_cache").remove("app_config_cache").apply();File f=new File(getFilesDir(),"feed-cache.json");if(f.exists())f.delete();File c=new File(getFilesDir(),"config-cache.json");if(c.exists())c.delete();Toast.makeText(this,"Yerel kayıtlar temizlendi",Toast.LENGTH_SHORT).show();recreate();}
     private void confirm(String message,Runnable yes){new AlertDialog.Builder(this).setMessage(message).setNegativeButton("Vazgeç",null).setPositiveButton("Temizle",(d,w)->yes.run()).show();}
 
     private void applyThemeMode(){String mode=getSharedPreferences(DataRepository.PREFS,MODE_PRIVATE).getString("theme","system");boolean sys=(getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES;dark="dark".equals(mode)||("system".equals(mode)&&sys);}
