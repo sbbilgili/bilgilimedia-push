@@ -199,6 +199,7 @@ requireAll(main, [
   'sectionTitle("İzinler","Mevcut önizleme sürümü")',
   'menuCard("↗ Gizlilik politikasını aç","bilgilimedia-60d6f.web.app/privacy"'
 ], "Golden Settings/Privacy contract");
+if (!main.includes('sectionTitle("BilgiliMedia","İletişim")')) throw new Error("Golden About contact heading missing");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
