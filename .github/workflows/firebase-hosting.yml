@@ -2,6 +2,8 @@ name: Deploy Firebase Hosting
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "content/feed.json"
       - "hosting/**"
@@ -12,36 +14,27 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   deploy-hosting:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/190776938532/locations/global/workloadIdentityPools/github-actions/providers/bilgilimedia-push
+          service_account: firebase-adminsdk-fbsvc@bilgilimedia-60d6f.iam.gserviceaccount.com
+          project_id: bilgilimedia-60d6f
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Check Firebase secret
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "FIREBASE_SERVICE_ACCOUNT secret is missing."
-            exit 1
-          fi
-
-      - name: Prepare Google credentials
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
-          chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
 
       - name: Publish repository content feed
         shell: bash
@@ -53,7 +46,5 @@ jobs:
         run: node scripts/build-web-content.js
 
       - name: Deploy Firebase Hosting
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
         run: |
           npx --yes firebase-tools@latest deploy --only hosting --project bilgilimedia-60d6f --non-interactive
