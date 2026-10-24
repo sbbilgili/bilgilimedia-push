@@ -628,3 +628,88 @@ public class MainActivity extends Activity {
     private void renderPrivacy(){
         renderHeader(false);content.addView(tv("Gizlilik",24,text(),true));
         addInfo("BilgiliMedia Android uygulamasında veri kullanımının özeti.","");
+        sectionTitle("Cihazda tutulanlar","Yerel tercihler");
+        content.addView(tv("Kaydedilen içerikler, okuma geçmişi, son okunanlar, tema seçimi, bildirim tercihleri ve içerik önbelleği cihazında saklanabilir.",14,secondary(),false));
+        sectionTitle("Firebase Cloud Messaging","Bildirimler");
+        content.addView(tv("Bildirimleri açtığında Firebase Cloud Messaging, bildirimi bu uygulama kurulumuna ulaştırmak için bir kayıt tokenı ve gerekli teknik bilgileri işler.",14,secondary(),false));
+        sectionTitle("İzinler","Mevcut üretim adayı");
+        content.addView(tv("Uygulama internet erişimi ve Android sürümüne bağlı olarak bildirim izni kullanır. Konum, rehber, kamera, mikrofon, SMS veya genel depolama izni istemez.",14,secondary(),false));
+        TextView p=pill("↗ Gizlilik politikasını aç",true);p.setOnClickListener(v->openUrl(PRIVACY));content.addView(p);
+    }
+
+    private void renderAbout(){
+        renderHeader(false);content.addView(tv("Hakkında",24,text(),true));
+        content.addView(tv("BilgiliMedia • Bilgi, keşif ve medya",14,secondary(),false));
+        sectionTitle("Sahiplik","Geliştirici bilgileri");
+        addInfo("Geliştirici ve Kurucu","Şükrü Batuhan Bilgili");addInfo("Marka","BilgiliMedia");
+        content.addView(tv("© 2026 Şükrü Batuhan Bilgili / BilgiliMedia",12,secondary(),false));
+        sectionTitle("Uygulama","Sürüm ve paket bilgileri");
+        TextView version=menuLine("Sürüm","1.4.9 • versionCode 23");version.setOnLongClickListener(v->{showScreen("developer");return true;});content.addView(version);
+        content.addView(menuLine("Paket",getPackageName()));
+        content.addView(menuLine("Canlı içerik akışı","Sürüm "+feedVersion+" • "+articles.size()+" içerik"));
+        content.addView(menuLine("Android App Links","Etkin • web.app/content/…"));
+        sectionTitle("İletişim","");
+        content.addView(menuCard("▣ Web sitemiz","spoo.me/bilgilimedia",()->openUrl(WEB)));
+        content.addView(menuCard("✉ E-posta",EMAIL,this::email));
+    }
+
+    private void renderDeveloper(){
+        renderHeader(false);content.addView(tv("Geliştirici Tanılama",24,text(),true));
+        content.addView(tv("Bu ekran normal kullanıcı menüsünde gösterilmez. Firebase push sorunlarını teşhis etmek için saklanır.",13,secondary(),false));
+        String token=prefs.getString("fcm_token","");
+        String state=token.isEmpty()?"FCM Push: Başlatıldı • cihaz kaydı bekleniyor":"FCM Push: Hazır • cihaz kayıtlı";
+        addInfo("FCM durumu",state);
+        addInfo("Cihaz tokenı",token.isEmpty()?"…":"…"+token.substring(Math.max(0,token.length()-12)));
+        addInfo("Paket",getPackageName());addInfo("Sürüm","1.4.9 (23)");addInfo("Feed","v"+feedVersion);addInfo("Config",prefs.getString("config_updated_at","bilinmiyor"));
+        TextView copy=pill("FCM tokenını kopyala",false);copy.setOnClickListener(v->{ClipboardManager cm=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(cm!=null)cm.setPrimaryClip(ClipData.newPlainText("FCM token",token));Toast.makeText(this,"Token kopyalandı",Toast.LENGTH_SHORT).show();});content.addView(copy);
+        TextView verify=pill("Topic aboneliklerini doğrula",false);verify.setOnClickListener(v->{NotificationSync.sync(this,config);Toast.makeText(this,"Topic eşleşmesi yenilendi",Toast.LENGTH_SHORT).show();});content.addView(verify);
+        TextView renew=pill("FCM kaydını yenile",false);renew.setOnClickListener(v->FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(t->{FirebaseMessaging.getInstance().getToken().addOnSuccessListener(x->{prefs.edit().putString("fcm_token",x).apply();NotificationSync.sync(this,config);renderDeveloper();});}));content.addView(renew);
+        TextView local=pill("Yerel test bildirimi gönder",true);local.setOnClickListener(v->NotificationHelper.show(this,"","Genel","BilgiliMedia test bildirimi","Bildirim altyapısı çalışıyor."));content.addView(local);
+    }
+
+    private void openArticle(Models.Article a){
+        screen="article";addHistory(a.id);incrementRead(a.id);content.removeAllViews();
+        TextView back=pill("← Geri",false);back.setOnClickListener(v->showScreen("home"));content.addView(back);
+        TextView meta=tv(a.category+" • "+a.minutes+" DK OKUMA"+(a.hasVideo()?" • ▶ VIDEO":""),12,brand(),true);meta.setPadding(0,dp(12),0,dp(5));content.addView(meta);
+        if(!a.imageUrl.isEmpty()) content.addView(cover(a,dp(210)),new LinearLayout.LayoutParams(-1,dp(210)));
+        TextView title=tv(a.title,25,text(),true);title.setPadding(0,dp(12),0,dp(8));content.addView(title);
+        TextView summary=tv(a.summary,16,secondary(),true);summary.setPadding(0,0,0,dp(12));content.addView(summary);
+        TextView body=tv(a.body,16,text(),false);body.setLineSpacing(0,1.18f);content.addView(body);
+        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setPadding(0,dp(12),0,dp(5));
+        TextView fav=pill(isSavedArticle(a.id)?"♥ Kaydedildi":"♡ Kaydet",false);fav.setOnClickListener(v->{toggleSavedArticle(a.id);openArticle(a);});actions.addView(fav);
+        TextView share=pill("↗ Paylaş",false);share.setOnClickListener(v->shareArticle(a));actions.addView(share);content.addView(actions);
+        if(a.hasVideo()){TextView video=pill("▶  Videoyu izle",true);video.setOnClickListener(v->openUrl(a.videoUrl));content.addView(video);}
+        sectionTitle("Kaynaklar","İçeriğin hazırlanmasında yararlanılan referanslar");
+        if(a.sources.isEmpty()) content.addView(tv("Bu çevrimdışı yedek içerik için kaynak bağlantısı henüz bulunmuyor.",13,secondary(),false));
+        for(Models.Source s:a.sources) content.addView(menuCard("↗ "+s.title,host(s.url),()->openUrl(s.url)));
+        sectionTitle("BilgiliMedia notu","Bu içerik kısa okuma formatındadır.");
+        content.addView(tv("Detaylı araştırmalarda birincil ve güvenilir kaynakları karşılaştırmayı unutma.",13,secondary(),false));
+        renderBottomNav();scroll.post(()->scroll.scrollTo(0,0));
+    }
+
+    private FrameLayout cover(Models.Article a,int height){
+        FrameLayout frame=new FrameLayout(this);frame.setBackground(gradientFor(a.category));frame.setClipToOutline(false);
+        ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setAlpha(0f);frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
+        TextView mark=tv(categoryMark(a.category),36,Color.WHITE,true);mark.setGravity(Gravity.CENTER);frame.addView(mark,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout overlay=new LinearLayout(this);overlay.setOrientation(LinearLayout.VERTICAL);overlay.setGravity(Gravity.BOTTOM);overlay.setPadding(dp(12),dp(8),dp(12),dp(10));
+        TextView logo=tv("BİLGİLİMEDIA",11,Color.WHITE,true);overlay.addView(logo);
+        if(a.hasVideo()) overlay.addView(tv("▶ VIDEO",11,Color.WHITE,true));
+        frame.addView(overlay,new FrameLayout.LayoutParams(-1,-1));
+        if(!a.imageUrl.isEmpty()) loadImage(a.imageUrl,image,mark);
+        frame.setContentDescription((a.imageUrl.isEmpty()?"Renkli ":"Fotoğraflı ")+a.category+" kapak görseli");
+        return frame;
+    }
+
+    private void loadImage(String url,ImageView view,TextView fallback){
+        io.execute(()->{
+            try{
+                File dir=new File(getCacheDir(),"covers");dir.mkdirs();File f=new File(dir,sha(url)+".img");
+                if(!f.exists()){
+                    URL u=new URL(url);if(!"https".equalsIgnoreCase(u.getProtocol()))return;HttpURLConnection c=(HttpURLConnection)u.openConnection();c.setConnectTimeout(7000);c.setReadTimeout(9000);c.setRequestProperty("User-Agent","BilgiliMedia/1.4.9");
+                    if(c.getResponseCode()>=200&&c.getResponseCode()<300){try(java.io.InputStream in=c.getInputStream();FileOutputStream out=new FileOutputStream(f)){byte[] buf=new byte[8192];int n,total=0;while((n=in.read(buf))>0){total+=n;if(total>4_000_000)throw new IllegalStateException("image too large");out.write(buf,0,n);}}}else return;c.disconnect();
+                }
+                Bitmap b=BitmapFactory.decodeFile(f.getAbsolutePath());if(b!=null)runOnUiThread(()->{view.setImageBitmap(b);view.animate().alpha(1f).setDuration(220).start();fallback.setVisibility(View.GONE);});
+            }catch(Exception ignored){}
+        });
+    }
+
