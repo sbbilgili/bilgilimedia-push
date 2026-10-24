@@ -2,3 +2,10 @@ node_modules/
 gha-creds-*.json
 npm-debug.log*
 .DS_Store
+*.jks
+*.keystore
+*.p12
+*.pfx
+service-account*.json
+*firebase-adminsdk*.json
+google-services-production.json
