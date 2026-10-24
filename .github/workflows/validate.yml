@@ -44,6 +44,9 @@ jobs:
       - name: Validate Android golden/security source contract
         run: node scripts/validate-android-source.js
 
+      - name: Validate release signing helper syntax
+        run: bash -n scripts/sign-android-aab.sh
+
       - name: Set up Java
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
