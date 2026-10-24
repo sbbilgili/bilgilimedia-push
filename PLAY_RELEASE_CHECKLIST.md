@@ -1,56 +1,120 @@
 # BilgiliMedia — Google Play yayın kontrol listesi
 
-Bu dosya 1.4.8 ve sonraki üretim adayları için yayın öncesi kontrol kapısıdır.
+Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın öncesi kontrol kapısıdır.
 
-## Android build
+## 1. Altın referans / arayüz
 
-- [ ] Native Android kaynak projesi ve son üretim APK/AAB ayrıca denetlendi.
+- [x] Orijinal arayüzlü 1.4.8 APK referans olarak sabitlendi.
+- [x] Referans SHA-256: `dca81609a1df783de5606ee646af4bd672121aed0188a84886db1c0652ccae76`.
+- [x] Preview paket: `com.bilgilimedia.mobile.media.preview`.
+- [x] Preview imza sertifikası App Links kaydıyla eşleşiyor.
+- [ ] Orijinal arayüzün yeniden üretilebilir native kaynak projesi kurtarıldı/yeniden oluşturuldu.
+- [ ] Final Play build'i bu altın referansla görsel ve işlevsel regresyon testinden geçti.
+
+## 2. Android build / Play AAB
+
 - [ ] Üretim package name: `com.bilgilimedia.mobile`.
-- [ ] `versionCode` önceki Play sürümünden büyüktür.
-- [ ] Target SDK API 36 veya Google Play'in o tarihte istediği daha yeni seviye.
-- [ ] Release AAB doğru upload key ile imzalandı.
-- [ ] Kamera, mikrofon, konum, rehber gibi gereksiz izinler manifestte yok.
-- [ ] Android 13+ bildirim izni akışı gerçek cihazda test edildi.
-- [ ] FCM topic aboneliği, yeni kategori ekleme ve topic temizleme gerçek cihazda test edildi.
+- [ ] Önerilen sonraki production versionCode: `23` veya daha yüksek.
+- [ ] Target SDK: API 36 veya Play'in yayın gününde istediği daha yeni seviye.
+- [ ] minSdk: API 26 kararı korunuyor.
+- [ ] Google Play için **AAB** üretildi; APK yalnız cihaz QA'sı için kullanılıyor.
+- [ ] Release AAB üretim/upload anahtarıyla imzalandı.
+- [x] Referans APK'da gereksiz hassas izin bulunmuyor.
+- [x] Referans APK'da cleartext HTTP kapalı ve `allowBackup=false`.
+- [x] Referans APK v2 + v3 APK signature block içeriyor.
+- [x] Referans APK'daki native `.so` kütüphaneleri 16 KB ELF hizasına sahip.
+- [x] Referans APK'da uncompressed native kütüphaneler ZIP içinde 16 KB hizalı.
+- [ ] Final AAB/Play-generated APK seti 16 KB page-size kontrolünden geçti.
+- [ ] Final AAB bundletool/Play Console pre-launch raporu ile doğrulandı.
+
+## 3. Firebase / bildirim
+
+- [ ] Firebase Console'da production paket `com.bilgilimedia.mobile` Android uygulaması kayıtlı.
+- [ ] Production `google-services.json` final kaynak projeye ait; preview dosyası kullanılmıyor.
+- [x] Backend FCM gönderimi OIDC/WIF ile anahtarsız çalışıyor.
+- [x] FCM erişimi dry-run ile doğrulanıyor.
+- [ ] Android 13+ bildirim izni gerçek cihazda test edildi.
+- [ ] FCM token yenileme, topic subscribe/unsubscribe gerçek cihazda test edildi.
+- [ ] AI/HIGGS dahil uzaktan kategori ekleme testi yapıldı.
+- [ ] Cihaz yeniden başlatma ve uygulama güncellemesi sonrası topic/iş kontrolü test edildi.
+
+## 4. App Links
+
+- [x] Preview `assetlinks.json` kaydı mevcut ve preview sertifikasıyla eşleşiyor.
+- [ ] `assetlinks.json` production paket `com.bilgilimedia.mobile` için kayıt içeriyor.
+- [ ] Production SHA-256 değeri Play Console > App integrity > **App signing certificate** ile birebir eşleşiyor.
+- [ ] Play App Signing birden fazla dağıtım sertifikası gösteriyorsa gerekli tüm fingerprint'ler API sağlayıcılarında ve assetlinks'te kaydedildi.
 - [ ] App Link ile içerik açma ve tarayıcı fallback gerçek cihazda test edildi.
 
-## App Links
+## 5. İmza ve güncelleme sürekliliği
 
-- [ ] `assetlinks.json` üretim paketi `com.bilgilimedia.mobile` için bir kayıt içeriyor.
-- [ ] SHA-256 parmak izi, Google Play Console > App integrity altında görünen **App signing certificate** parmak iziyle birebir aynı.
-- [ ] Preview paketinin kaydı üretim kaydından ayrı tutuluyor.
-- [ ] `https://bilgilimedia-60d6f.web.app/.well-known/assetlinks.json` herkese açık ve doğru Content-Type ile yanıt veriyor.
+- [x] Mevcut üretim imza yedeğinin sertifikası doğrulandı: `F6:84:6E:CB:EC:19:CC:99:DB:68:2A:37:4F:47:8F:D1:9B:59:E6:96:54:2E:C5:0F:16:B5:33:0E:DD:DF:CF:6A`.
+- [x] Eski production AAB'nin sertifikası aynı fingerprint ile eşleşiyor.
+- [ ] Google Play App Signing ilk release'ten önce mevcut production app signing key'i kullanacak şekilde yapılandırıldı; böylece sideload edilmiş eski `com.bilgilimedia.mobile` kurulumlarıyla imza sürekliliği korunuyor.
+- [ ] App signing key ile upload key ayrıldı ve upload key yedeği güvenli yerde tutuluyor.
+- [ ] Özel anahtar/parola GitHub veya herkese açık dosyalara eklenmedi.
 
-## Gizlilik ve Veri Güvenliği
+## 6. Gizlilik / Data Safety
 
-- [ ] Herkese açık gizlilik politikası canlı.
-- [ ] Play Console Data safety beyanı FCM/Firebase Installations kullanımını hesaba katıyor; eski "hiç veri toplanmıyor" taslağı kullanılmıyor. `PLAY_DATA_SAFETY_DRAFT.md` güncel form ile karşılaştırıldı.
-- [ ] Uygulamada ayrı analytics veya reklam SDK'sı yoksa Play beyanı buna göre dolduruluyor.
-- [ ] Sponsor reklam sistemi yayına alınacaksa "Contains ads" ve ilgili gizlilik/Data safety beyanları **reklam açılmadan önce** güncelleniyor.
-- [ ] Veri satışı yapılmadığı beyanı ürün davranışıyla uyumlu.
+- [x] Herkese açık gizlilik politikası güncel.
+- [x] Gizlilik metni FCM/Firebase Installations FID kullanımını açıklıyor.
+- [x] Gizlilik metni Firebase Hosting standart ağ/IP işleme bilgisini açıklıyor.
+- [x] Gizlilik metni normal Android arka plan izinlerini açıklıyor.
+- [x] Referans APK'da Analytics, Crashlytics ve AdMob yok.
+- [ ] Final Play Data Safety formunda **Device or other IDs** (FID) toplama beyan edildi.
+- [ ] Amaç final formda uygulama işlevselliğiyle uyumlu seçildi.
+- [ ] Firebase hizmet sağlayıcı istisnasına göre “sharing” cevabı final form metniyle doğrulandı.
+- [ ] “Data encrypted in transit” final AAB ve form metniyle doğrulandı.
+- [x] Uygulamada kullanıcı hesabı yok; account-deletion zorunluluğu mevcut davranışta uygulanmıyor.
+- [x] Sponsor reklam sistemi kapalı.
+- [ ] Sponsor sistemi açılmadan önce Contains ads + privacy + Data Safety yeniden güncellenecek.
 
-## Mağaza varlıkları
+## 7. Play Console / geliştirici hesabı
 
-- [ ] 512x512 uygulama simgesi.
-- [ ] 1024x500 feature graphic.
-- [ ] Güncel gerçek uygulamadan telefon ekran görüntüleri.
-- [ ] Kısa açıklama, uzun açıklama, destek e-postası ve gizlilik URL'si güncel.
-- [ ] İçerik derecelendirme ve hedef yaş grubu gerçek uygulama içeriğine göre yeniden kontrol edildi.
+- [ ] Geliştirici kimlik doğrulaması tamamlandı.
+- [ ] `com.bilgilimedia.mobile` Play package adı 30 Eylül 2026 sonrası paket kayıt gerekliliklerine göre Play Console'da kayıtlı/doğrulanmış görünüyor.
+- [ ] Uygulama oluşturma ekranında doğru uygulama adı, varsayılan dil ve uygulama türü seçildi.
+- [ ] Uygulama erişimi: giriş gerekmiyor şeklinde beyan edildi.
+- [ ] Reklam beyanı: sponsorAds kapalı olduğu sürece “No”.
+- [ ] İçerik derecelendirme IARC anketi gerçek final içerik üzerinden tamamlandı.
+- [ ] Hedef kitle gerçek ürün kararıyla dolduruldu.
+- [ ] Haber uygulaması olmadığı beyanı gerçek ürün davranışıyla uyumlu.
+- [ ] Yeni kişisel geliştirici hesabı kuralına tabi olunuyorsa 12 tester / 14 kesintisiz gün kapalı test tamamlandı.
 
-## Test ve yayın
+## 8. Mağaza varlıkları
 
-- [ ] Fiziksel Android cihazda temiz kurulum testi.
-- [ ] Önceki sürümün üzerine güncelleme testi.
-- [ ] İnternetsiz durum, yavaş ağ, geri tuşu ve uygulama yeniden açılışı testi.
-- [ ] Kaydedilenler/geçmiş/tema gibi yerel verilerin sürüm yükseltmede korunması kontrol edildi.
-- [ ] Yeni kişisel Play geliştirici hesabı kuralına tabi olunuyorsa gerekli kapalı test tamamlandı.
-- [ ] Play App Signing kurulumu ve upload key yedeği güvenli yerde saklanıyor.
+- [x] 512×512 uygulama simgesi mevcut; final marka görseliyle yeniden doğrulanacak.
+- [x] 1024×500 feature graphic mevcut; final marka mesajıyla yeniden doğrulanacak.
+- [ ] Ekran görüntüleri **final production build** üzerinden yeniden çekildi.
+- [ ] Eski 1.1.x ekran görüntüleri kullanılmıyor.
+- [x] Güncel Türkçe mağaza metni repoya eklendi.
+- [ ] Destek e-postası ve gizlilik URL'si Play Console'a girildi.
+- [ ] Mağaza açıklaması final kategori/özelliklerle birebir eşleşiyor.
 
-## Altyapı güvenliği
+## 9. Fiziksel cihaz QA
+
+- [ ] Temiz kurulum.
+- [ ] Eski `com.bilgilimedia.mobile` sürümünün üzerine güncelleme.
+- [ ] Android 8/9 veya desteklenen en eski API 26 cihaz/emülatör testi.
+- [ ] Android 13+ bildirim izin testi.
+- [ ] Android 16 / API 36 cihaz veya emülatör testi.
+- [ ] 16 KB page-size ortamında test.
+- [ ] Wi-Fi / mobil ağ / bağlantısız / yavaş ağ senaryoları.
+- [ ] Geri tuşu, yeniden açma ve ekran döndürme.
+- [ ] Büyük yazı boyutu ve erişilebilirlik.
+- [ ] Favoriler, son okunanlar, tema ve bildirim tercihlerinin güncellemede korunması.
+- [ ] Sosyal bağlantı uygulama varsa app'e, yoksa HTTPS fallback'e gidiyor.
+- [ ] App Links doğru içeriği açıyor.
+- [ ] AI/HIGGS ve yeni uzaktan kategoriler menü/bildirim tarafında doğrulanıyor.
+
+## 10. Altyapı güvenliği
 
 - [x] GitHub -> Google Cloud anahtarsız OIDC/WIF.
 - [x] Eski `FIREBASE_SERVICE_ACCOUNT` secret kaldırıldı.
 - [x] Eski kullanıcı tarafından yönetilen servis hesabı JSON anahtarı kaldırıldı.
-- [x] FCM erişimi dry-run ile doğrulanıyor.
 - [x] GitHub Actions bağımlılıkları tam commit SHA'larına sabitlendi.
-- [ ] GitHub `main` dalı için branch/ruleset koruması açıldı.
+- [x] `package-lock.json` + `npm ci`.
+- [x] Hosting CSP ve temel güvenlik başlıkları.
+- [x] GitHub `main` ruleset aktif.
+- [x] PR zorunlu + `validate` status check zorunlu.
+- [x] Force push ve branch silme engelli.

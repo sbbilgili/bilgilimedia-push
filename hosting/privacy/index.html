@@ -17,30 +17,33 @@
     <p>Bu politika, BilgiliMedia Android uygulamasının hangi verileri kullandığını ve bunların nasıl işlendiğini açıklar.</p>
 
     <h2>1. Hesap ve üyelik</h2>
-    <p>Uygulamada kullanıcı hesabı veya üyelik sistemi bulunmaz. Uygulama ad, telefon numarası ya da posta adresi gibi bilgileri kullanıcı hesabı oluşturmak amacıyla istemez.</p>
+    <p>Uygulamada kullanıcı hesabı veya üyelik sistemi bulunmaz. Uygulama ad, telefon numarası, e-posta adresi ya da posta adresi gibi bilgileri kullanıcı hesabı oluşturmak amacıyla istemez.</p>
 
     <h2>2. Cihazda saklanan veriler</h2>
-    <p>Kaydedilen içerikler, okuma geçmişi, son okunanlar, tema seçimi, bildirim tercihleri ve içerik önbelleği cihazda yerel olarak saklanabilir. Kullanıcı bu yerel kayıtları uygulama içinden temizleyebilir.</p>
+    <p>Kaydedilen içerikler, okuma geçmişi, son okunanlar, tema seçimi, bildirim tercihleri ve içerik önbelleği cihazda yerel olarak saklanabilir. Bu veriler BilgiliMedia kullanıcı hesabıyla eşleştirilmez. Kullanıcı uygulama içindeki temizleme seçeneklerini kullanabilir; uygulamanın kaldırılması da Android'in normal kaldırma süreci kapsamında yerel uygulama verilerini kaldırır.</p>
 
     <h2>3. Bildirimler ve Firebase</h2>
-    <p>Bildirim özelliği Google Firebase Cloud Messaging (FCM) kullanır. Firebase, mesajları doğru uygulama kurulumuna ulaştırmak ve topic aboneliklerini yönetmek için uygulama sürümü, Firebase user agent bilgileri ve kurulum başına oluşturulan Firebase Installation ID (FID) gibi teknik verileri işleyebilir. FCM kayıt belirteci de bildirim teslimi için kullanılabilir. FID, bir kişiyi doğrudan tanımlamak amacıyla oluşturulmaz; uygulamanın belirli bir kurulumunu tanımlar. Bildirim kategorisi tercihleri cihazda tutulur.</p>
+    <p>Bildirim özelliği Google Firebase Cloud Messaging (FCM) kullanır. Firebase, mesajları doğru uygulama kurulumuna ulaştırmak ve topic aboneliklerini yönetmek için uygulama sürümü, Firebase user agent bilgileri, kurulum başına oluşturulan Firebase Installation ID (FID) ve bildirim teslimi için gerekli FCM kayıt belirteci gibi teknik verileri işleyebilir. FID, bir kişiyi doğrudan tanımlamak amacıyla oluşturulmaz; belirli bir uygulama kurulumunu tanımlar. Bildirim kategori tercihleri cihazda tutulur.</p>
 
-    <h2>4. İçerik, görseller ve bağlantılar</h2>
-    <p>Uygulama, BilgiliMedia içerik akışını internet üzerinden indirir. Görseller, videolar, kaynak bağlantıları ve sosyal medya bağlantıları üçüncü taraf hizmetlerden yüklenebilir veya bu hizmetlerde açılabilir. Bu durumda ilgili üçüncü tarafın kendi gizlilik şartları geçerlidir.</p>
+    <h2>4. BilgiliMedia Hosting ve ağ istekleri</h2>
+    <p>Uygulama içerik akışını ve uzaktan yapılandırmayı BilgiliMedia Firebase Hosting alanından HTTPS üzerinden alır. Firebase Hosting, hizmeti çalıştırmak, güvenliği sağlamak ve kötüye kullanımı önlemek için standart ağ isteği bilgilerini (örneğin IP adresi ve teknik istek bilgileri) Google altyapısında işleyebilir. BilgiliMedia uygulaması bu IP bilgisini konum belirleme, reklam hedefleme veya kullanıcı profili oluşturma amacıyla kullanmaz.</p>
 
-    <h2>5. İzinler</h2>
-    <p>Mevcut sürüm internet erişimi ve Android sürümüne bağlı olarak bildirim izni kullanır. Konum, rehber, kamera veya mikrofon izni talep edilmez.</p>
+    <h2>5. İçerik, görseller ve dış bağlantılar</h2>
+    <p>Uygulama, BilgiliMedia içerik akışını internet üzerinden indirir. Görseller, videolar, kaynak bağlantıları ve sosyal medya bağlantıları üçüncü taraf hizmetlerde açılabilir. Kullanıcı bir dış bağlantıyı açtığında ilgili hizmetin kendi gizlilik ve kullanım şartları geçerlidir. BilgiliMedia uygulaması açık web sayfalarını uygulama içi WebView ile izlemez.</p>
 
-    <h2>6. Reklam ve analiz</h2>
-    <p>Mevcut sürümde reklam SDK'sı veya kullanıcı davranışını izlemek için ayrı bir analiz SDK'sı entegre değildir. Sponsorlu içerik altyapısı etkin olmadığı sürece uygulamada sponsor reklam kartı gösterilmez.</p>
+    <h2>6. Android izinleri</h2>
+    <p>Uygulama internet erişimi kullanır ve Android 13 veya sonraki sürümlerde bildirim gösterebilmek için kullanıcıdan bildirim izni isteyebilir. Ayrıca ağ durumunu kontrol etmek, cihaz yeniden başlatıldıktan veya uygulama güncellendikten sonra bildirim/içerik kontrolünü yeniden planlamak ve kısa süreli arka plan işlemlerini güvenli biçimde tamamlamak için Android'in normal izinlerinden ACCESS_NETWORK_STATE, RECEIVE_BOOT_COMPLETED ve WAKE_LOCK kullanılabilir. Konum, rehber, kamera, mikrofon, SMS veya genel dosya/depolama erişimi talep edilmez.</p>
 
-    <h2>7. Veri paylaşımı ve satışı</h2>
-    <p>BilgiliMedia bu uygulama üzerinden kişisel verileri satmaz. Firebase, bildirim hizmetinin sağlanması için Google altyapısı üzerinde çalışır. Harici bağlantılar açıldığında ilgili üçüncü taraf hizmetlerin kendi veri işleme kuralları geçerli olabilir.</p>
+    <h2>7. Reklam ve analiz</h2>
+    <p>Mevcut sürümde AdMob veya başka bir üçüncü taraf reklam SDK'sı, Google Analytics for Firebase, Crashlytics ya da kullanıcı davranışını izleyen ayrı bir analiz SDK'sı entegre değildir. Sponsorlu içerik altyapısı uzaktan yapılandırılabilir ancak etkin olmadığı sürece uygulamada sponsor reklam kartı gösterilmez.</p>
 
-    <h2>8. Yerel verileri temizleme</h2>
-    <p>Uygulamanın cihazda tuttuğu kaydedilen içerik, geçmiş ve tercih gibi yerel kayıtlar uygulama içinden temizlenebilir. Uygulamanın kaldırılması da uygulamaya ait yerel verileri Android'in normal uygulama kaldırma süreci kapsamında cihazdan kaldırır.</p>
+    <h2>8. Veri paylaşımı ve satışı</h2>
+    <p>BilgiliMedia bu uygulama üzerinden kişisel verileri satmaz. Firebase, bildirim ve barındırma hizmetlerinin sağlanması için Google altyapısı üzerinde hizmet sağlayıcı olarak teknik verileri işleyebilir. Harici bağlantılar açıldığında ilgili üçüncü taraf hizmetlerin kendi veri işleme kuralları geçerli olabilir.</p>
 
-    <h2>9. İletişim</h2>
+    <h2>9. Veri silme</h2>
+    <p>Uygulamada kullanıcı hesabı bulunmadığı için kullanıcı hesabı silme süreci yoktur. Cihazda tutulan kaydedilen içerik, geçmiş ve tercihler uygulama içinden temizlenebilir. Firebase Installation ID yaşam döngüsü Firebase tarafından yönetilir; uygulamanın kaldırılması, yeniden kurulması veya Firebase'in kendi kimlik yaşam döngüsü kapsamında FID değişebilir ya da silinebilir.</p>
+
+    <h2>10. İletişim</h2>
     <p>Gizlilik ile ilgili sorular için <a href="mailto:sukrubatuhanbilgili@gmail.com">sukrubatuhanbilgili@gmail.com</a> adresinden iletişime geçebilirsiniz.</p>
 
     <p><a href="/">BilgiliMedia ana sayfasına dön</a></p>
