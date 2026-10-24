@@ -27,7 +27,7 @@ final class AppConfig {
             new HashSet<>(Arrays.asList("group", "category", "screen", "page"));
     private static final Set<String> ALLOWED_SCREENS = new HashSet<>(Arrays.asList(
             "home", "search", "saved", "accounts", "more", "history",
-            "notifications", "settings", "privacy", "about", "developer"));
+            "notifications", "settings", "privacy", "about"));
 
     int schemaVersion = 1;
     String updatedAt = "";
