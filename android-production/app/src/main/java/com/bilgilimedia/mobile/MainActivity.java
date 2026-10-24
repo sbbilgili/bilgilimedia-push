@@ -758,7 +758,7 @@ public class MainActivity extends Activity {
         content.addView(menuCard("▣ Web sitemiz","spoo.me/bilgilimedia",()->openUrl(WEB)));
         content.addView(menuCard("✉ İletişim",EMAIL,()->email()));
         content.addView(menuCard("↗ Uygulamayı paylaş","Arkadaşlarınla paylaş",this::shareApp));
-        TextView v=tv("BilgiliMedia • 1.4.9",11,muted(),false);v.setPadding(0,dp(12),0,dp(8));content.addView(v);
+        TextView v=tv(BuildConfig.DEBUG ? "BilgiliMedia Önizleme • 1.4.9" : "BilgiliMedia • 1.4.9",11,muted(),false);v.setPadding(0,dp(12),0,dp(8));content.addView(v);
     }
 
     private void showSection(String sectionId){
