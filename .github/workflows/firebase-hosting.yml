@@ -22,17 +22,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           workload_identity_provider: projects/190776938532/locations/global/workloadIdentityPools/github-actions/providers/bilgilimedia-push
           service_account: firebase-adminsdk-fbsvc@bilgilimedia-60d6f.iam.gserviceaccount.com
           project_id: bilgilimedia-60d6f
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
 
@@ -47,4 +47,4 @@ jobs:
 
       - name: Deploy Firebase Hosting
         run: |
-          npx --yes firebase-tools@latest deploy --only hosting --project bilgilimedia-60d6f --non-interactive
+          npx --yes firebase-tools@15.34.1 deploy --only hosting --project bilgilimedia-60d6f --non-interactive

@@ -1,16 +1,33 @@
 # BilgiliMedia Automatic Push
 
-This repository checks the BilgiliMedia live content feed every 15 minutes with GitHub Actions.
+BilgiliMedia bildirim akışı, GitHub deposundaki `content/feed.json` değişiklikleri üzerinden çalışır.
 
-## Behavior
+## Çalışma şekli
 
-- Existing articles are stored in `state/known.json` and do not trigger historical notifications.
-- New articles are detected by their `id`.
-- Each new article is sent to its category FCM topic.
-- The Android app receives a data-only high-priority FCM message and creates its own notification so tapping it can open the related article.
-- State advances only after Firebase credentials are available and the push run succeeds.
+- Workflow yalnızca ilgili dosyalar `main` dalına geldiğinde veya elle çalıştırıldığında başlar.
+- Zamanlanmış 15 dakikalık polling yoktur.
+- Push olayında mevcut `feed.json`, olaydan önceki commit'teki `feed.json` ile karşılaştırılır.
+- Yalnızca yeni eklenen içerik ID'leri bildirim adayı olur; geçmiş içerikler yeniden gönderilmez.
+- Kategori -> FCM topic eşleşmesi `hosting/app-config.json` dosyasından alınır.
+- Kapalı veya eşleşmemiş kategoriler için bildirim gönderilmez.
+- Workflow her çalışmada FCM erişimini dry-run ile doğrular; bu kontrol gerçek bildirim teslim etmez.
+- Android uygulaması data-only yüksek öncelikli FCM mesajını alır ve ilgili içeriği açacak yerel bildirimi oluşturur.
 
-## Topic mapping
+## Kimlik doğrulama
+
+GitHub Actions, Google Cloud'a uzun ömürlü JSON anahtarıyla bağlanmaz.
+
+Kullanılan yöntem:
+
+`GitHub OIDC -> Google Workload Identity Federation -> service account impersonation`
+
+- Pool: `github-actions`
+- Provider: `bilgilimedia-push`
+- Service account: `firebase-adminsdk-fbsvc@bilgilimedia-60d6f.iam.gserviceaccount.com`
+- Yetki yalnızca `sbbilgili/bilgilimedia-push` deposunun `main` dalı için sınırlandırılmıştır.
+- Repository secret olarak `FIREBASE_SERVICE_ACCOUNT` kullanılmaz ve yeniden oluşturulmamalıdır.
+
+## Topic eşleşmeleri
 
 - Genel -> `genel`
 - Belgesel -> `belgesel`
@@ -21,12 +38,4 @@ This repository checks the BilgiliMedia live content feed every 15 minutes with 
 - Animasyon -> `animasyon`
 - Çizgi Film -> `cizgifilm`
 
-## Required GitHub secret
-
-Create one repository secret named exactly:
-
-`FIREBASE_SERVICE_ACCOUNT`
-
-Its value must be the complete Firebase service account JSON for the BilgiliMedia Firebase project.
-
-Never commit that JSON file to this repository.
+Yeni kategori eklenirken `app-config.json` içinde benzersiz ve geçerli bir FCM topic tanımlanmalıdır.

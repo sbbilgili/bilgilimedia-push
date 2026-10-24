@@ -1,0 +1,4 @@
+node_modules/
+gha-creds-*.json
+npm-debug.log*
+.DS_Store

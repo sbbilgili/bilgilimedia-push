@@ -1,86 +1,79 @@
 const fs = require("fs");
 const path = require("path");
-const admin = require("firebase-admin");
+const { applicationDefault, initializeApp } = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
 
 const FEED_PATH = path.join(process.cwd(), "content", "feed.json");
-const STATE_PATH = path.join(process.cwd(), "state", "known.json");
-
 const CONFIG_PATH = path.join(process.cwd(), "hosting", "app-config.json");
-
-function slugifyTopic(value) {
-  return String(value || "")
-    .replace(/İ/g, "I")
-    .replace(/ı/g, "i")
-    .replace(/Ğ/g, "G")
-    .replace(/ğ/g, "g")
-    .replace(/Ü/g, "U")
-    .replace(/ü/g, "u")
-    .replace(/Ş/g, "S")
-    .replace(/ş/g, "s")
-    .replace(/Ö/g, "O")
-    .replace(/ö/g, "o")
-    .replace(/Ç/g, "C")
-    .replace(/ç/g, "c")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, "");
-}
+const PREVIOUS_FEED_PATH = process.env.PREVIOUS_FEED_PATH || "";
 
 function loadTopicMap() {
-  try {
-    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
-    const map = {};
-    for (const item of config.categories || []) {
-      if (item && item.enabled !== false && item.name && item.topic) {
-        map[String(item.name)] = String(item.topic);
-      }
-    }
-    return map;
-  } catch (error) {
-    console.warn("App config topic map unavailable, using generated topic slugs.");
-    return {};
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+  if (!config || !Array.isArray(config.categories)) {
+    throw new Error("Invalid app-config categories");
   }
+
+  const map = {};
+  const topics = new Set();
+
+  for (const item of config.categories) {
+    if (!item || item.enabled === false) continue;
+
+    const name = String(item.name || "").trim();
+    const topic = String(item.topic || "").trim();
+
+    if (!name || !topic) {
+      throw new Error("Enabled category is missing name or topic");
+    }
+    if (!/^[a-zA-Z0-9._~%-]+$/.test(topic)) {
+      throw new Error("Invalid FCM topic name: " + topic);
+    }
+    if (Object.prototype.hasOwnProperty.call(map, name)) {
+      throw new Error("Duplicate category name: " + name);
+    }
+    if (topics.has(topic)) {
+      throw new Error("Duplicate FCM topic: " + topic);
+    }
+
+    map[name] = topic;
+    topics.add(topic);
+  }
+
+  return map;
+}
+
+function readFeed(filePath, label) {
+  const feed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (!feed || !Array.isArray(feed.articles)) {
+    throw new Error("Invalid " + label + " feed");
+  }
+
+  const seenIds = new Set();
+  for (const article of feed.articles) {
+    const id = String(article?.id || "").trim();
+    const title = String(article?.title || "").trim();
+    const category = String(article?.category || "").trim();
+
+    if (!id || !title || !category) {
+      throw new Error(label + " feed contains an article missing id, title, or category");
+    }
+    if (seenIds.has(id)) {
+      throw new Error(label + " feed contains duplicate article id: " + id);
+    }
+    seenIds.add(id);
+  }
+
+  return feed;
 }
 
 const TOPICS = loadTopicMap();
 
-function readState() {
-  if (!fs.existsSync(STATE_PATH)) {
-    return { initialized: false, lastFeedVersion: 0, knownIds: [] };
-  }
-  return JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
-}
-
-function writeState(feed, ids, fresh) {
-  fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
-  fs.writeFileSync(
-    STATE_PATH,
-    JSON.stringify(
-      {
-        initialized: true,
-        lastFeedVersion: feed.version || 0,
-        lastCheckedAt: new Date().toISOString(),
-        lastNewIds: fresh.map((a) => String(a.id)),
-        knownIds: ids,
-      },
-      null,
-      2
-    ) + "\n"
-  );
-}
-
-async function getFeed() {
-  const feed = JSON.parse(fs.readFileSync(FEED_PATH, "utf8"));
-  if (!feed || !Array.isArray(feed.articles)) {
-    throw new Error("Invalid repository feed");
-  }
-  return feed;
-}
-
 function createMessage(article) {
-  const topic = TOPICS[article.category] || slugifyTopic(article.category);
-  if (!topic) return null;
+  const topic = TOPICS[article.category];
+  if (!topic) {
+    console.log("Skipping disabled or unmapped category:", article.category, article.id);
+    return null;
+  }
 
   return {
     topic,
@@ -106,26 +99,13 @@ function createMessage(article) {
 }
 
 async function main() {
-  const feed = await getFeed();
-  const state = readState();
+  const feed = readFeed(FEED_PATH, "current");
   const ids = feed.articles.map((article) => String(article.id));
 
-  if (!state.initialized) {
-    writeState(feed, ids, []);
+  if (!PREVIOUS_FEED_PATH || !fs.existsSync(PREVIOUS_FEED_PATH)) {
     console.log(
-      "Initial baseline created. Existing articles will not generate notifications."
-    );
-    return;
-  }
-
-  const known = new Set((state.knownIds || []).map(String));
-  const fresh = feed.articles.filter(
-    (article) => !known.has(String(article.id))
-  );
-
-  if (fresh.length === 0) {
-    console.log(
-      "No new articles. Feed version:",
+      "Feed validation completed. No previous feed was supplied, so no notifications will be sent.",
+      "Version:",
       feed.version || 0,
       "Articles:",
       ids.length
@@ -133,24 +113,36 @@ async function main() {
     return;
   }
 
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+  const previousFeed = readFeed(PREVIOUS_FEED_PATH, "previous");
+  const previousIds = new Set(
+    previousFeed.articles.map((article) => String(article.id))
+  );
+  const fresh = feed.articles.filter(
+    (article) => !previousIds.has(String(article.id))
+  );
+
+  if (fresh.length === 0) {
+    console.log(
+      "No new articles.",
+      "Feed version:",
+      feed.version || 0,
+      "Articles:",
+      ids.length
+    );
+    return;
+  }
+
+  initializeApp({
+    credential: applicationDefault(),
     projectId: "bilgilimedia-60d6f",
   });
 
   let sent = 0;
   for (const article of fresh) {
     const message = createMessage(article);
-    if (!message) {
-      console.log(
-        "Skipping unsupported category:",
-        article.category,
-        article.id
-      );
-      continue;
-    }
+    if (!message) continue;
 
-    const id = await admin.messaging().send(message);
+    const id = await getMessaging().send(message);
     sent += 1;
     console.log(
       "Push sent:",
@@ -162,7 +154,6 @@ async function main() {
     );
   }
 
-  writeState(feed, ids, fresh);
   console.log("New articles:", fresh.length, "Pushes sent:", sent);
 }
 
