@@ -1,0 +1,11 @@
+{
+  "name": "bilgilimedia-push",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "13.5.0"
+  }
+}
