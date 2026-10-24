@@ -470,35 +470,62 @@ public class MainActivity extends Activity {
     private void renderSearch() {
         renderHeader(false);
         content.addView(tv("Ara ve keşfet", 27, text(), true));
-        TextView desc = tv("Başlık, kategori, tür ve popülerliğe göre filtrele.", 14, secondary(), false);
-        desc.setPadding(0, dp(3), 0, dp(12));
-        content.addView(desc);
+        content.addView(tv("Başlık, kategori, tür ve popülerliğe göre filtrele.", 14, secondary(), false));
 
         EditText q = new EditText(this);
-        q.setSingleLine(true);
-        q.setText(query);
-        q.setSelection(q.length());
         q.setHint("Örn. tarih, doğa, teknoloji...");
+        q.setSingleLine(true);
         q.setTextColor(text());
         q.setHintTextColor(secondary());
         q.setBackground(round(card(), 16));
         q.setPadding(dp(14), 0, dp(14), 0);
-        content.addView(q, margin(-1, dp(54), 0, 0, 0, dp(12)));
+        content.addView(q, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54)));
 
-        filterLabel("İçerik türü");
-        content.addView(chipRow(new String[]{"Tümü","Yazı","Video","Favoriler"}, typeFilter, v -> {
-            typeFilter = (String) v;
-            renderSearch();
-        }));
+        TextView typeLabel = tv("İçerik türü", 12, secondary(), true);
+        typeLabel.setPadding(0, dp(12), 0, 0);
+        content.addView(typeLabel);
 
-        filterLabel("Sıralama");
-        content.addView(chipRow(new String[]{"Yeni","Popüler"}, sortFilter, v -> {
-            sortFilter = (String) v;
-            renderSearch();
-        }));
+        LinearLayout typeRow = new LinearLayout(this);
+        for (String value : new String[]{"Tümü","Yazı","Video","Favoriler"}) {
+            TextView chip = pill(value, value.equals(typeFilter));
+            chip.setOnClickListener(v -> { typeFilter = value; renderSearch(); });
+            typeRow.addView(chip);
+        }
+        HorizontalScrollView typeScroll = new HorizontalScrollView(this);
+        typeScroll.setHorizontalScrollBarEnabled(false);
+        typeScroll.addView(typeRow);
+        content.addView(typeScroll);
 
-        filterLabel("Kategori");
-        content.addView(categoryRail(true));
+        TextView sortLabel = tv("Sıralama", 12, secondary(), true);
+        sortLabel.setPadding(0, dp(5), 0, 0);
+        content.addView(sortLabel);
+
+        LinearLayout sortRow = new LinearLayout(this);
+        for (String value : new String[]{"Yeni","Popüler"}) {
+            TextView chip = pill(value, value.equals(sortFilter));
+            chip.setOnClickListener(v -> { sortFilter = value; renderSearch(); });
+            sortRow.addView(chip);
+        }
+        content.addView(sortRow);
+
+        TextView categoryLabel = tv("Kategori", 12, secondary(), true);
+        categoryLabel.setPadding(0, dp(5), 0, 0);
+        content.addView(categoryLabel);
+
+        LinkedHashSet<String> categoryNames = new LinkedHashSet<>();
+        categoryNames.add("Tümü");
+        for (Models.Article article : articles) categoryNames.add(article.category);
+
+        LinearLayout categoryRow = new LinearLayout(this);
+        for (String value : categoryNames) {
+            TextView chip = pill(value, value.equals(categoryFilter));
+            chip.setOnClickListener(v -> { categoryFilter = value; renderSearch(); });
+            categoryRow.addView(chip);
+        }
+        HorizontalScrollView categoryScroll = new HorizontalScrollView(this);
+        categoryScroll.setHorizontalScrollBarEnabled(false);
+        categoryScroll.addView(categoryRow);
+        content.addView(categoryScroll);
 
         LinearLayout results = new LinearLayout(this);
         results.setOrientation(LinearLayout.VERTICAL);
@@ -506,14 +533,13 @@ public class MainActivity extends Activity {
 
         q.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence value, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence value, int start, int before, int count) {
-                query = value.toString();
-            }
-            @Override public void afterTextChanged(Editable value) {
-                renderSearchResults(results, value.toString());
-            }
+            @Override public void onTextChanged(CharSequence value, int start, int before, int count) { query = value.toString(); }
+            @Override public void afterTextChanged(Editable value) { renderSearchResults(results, value.toString()); }
         });
-        renderSearchResults(results, query);
+
+        q.setText(query == null ? "" : query);
+        q.setSelection(q.length());
+        renderSearchResults(results, q.getText().toString());
     }
 
     private interface Choice { void select(Object value); }
