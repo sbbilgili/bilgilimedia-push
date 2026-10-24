@@ -181,6 +181,14 @@ requireAll(main, [
   'showScreen("more")',
   'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()'
 ], "Golden back-navigation contract");
+requireAll(main, [
+  'typeLabel.setPadding(0, dp(12), 0, 0)',
+  'sortLabel.setPadding(0, dp(5), 0, 0)',
+  'categoryLabel.setPadding(0, dp(5), 0, 0)',
+  'categoryNames.add("Tümü")',
+  'for (Models.Article article : articles) categoryNames.add(article.category)',
+  'new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54))'
+], "Golden search spacing/category source");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
