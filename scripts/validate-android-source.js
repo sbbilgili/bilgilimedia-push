@@ -42,7 +42,7 @@ requireAll(manifest, [
   'android.permission.RECEIVE_BOOT_COMPLETED'
 ], "Manifest contract");
 
-requireAll(data, ['PREFS = "preferences"'], "Local-data compatibility");
+if (!/PREFS\s*=\s*"preferences"/.test(data)) throw new Error("Local-data compatibility must use SharedPreferences name: preferences");
 
 requireAll(main, [
   'header.setPadding(dp(16), dp(9), dp(12), dp(8))',
