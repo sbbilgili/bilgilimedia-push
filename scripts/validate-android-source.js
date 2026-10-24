@@ -145,6 +145,13 @@ const socialCount = (social.match(/x\.add\(a\(/g) || []).length;
 if (socialCount !== 33) throw new Error("Golden social-account count must be 33, found " + socialCount);
 
 if (main.includes("İçerik Bölümleri")) throw new Error("Non-golden More-screen section must not be visible in the 1.4.8 parity client");
+if (main.includes("setLineSpacing(0,1.08f)") || main.includes("setLineSpacing(0, 1.08f)")) throw new Error("Golden TextView helper must not add global line spacing");
+requireAll(main, [
+  'private LinearLayout menuCard(String title, String subtitle, Runnable action)',
+  'cardView.addView(tv(title, 16, text(), true))',
+  'cardView.addView(tv(subtitle == null ? "" : subtitle, 12, secondary(), false))',
+  'content.addView(menuCard(title, value, null))'
+], "Golden menu-card helper");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
