@@ -130,6 +130,23 @@ if (!firebase?.hosting?.public || !Array.isArray(firebase?.hosting?.headers)) {
   throw new Error("firebase.json hosting configuration is incomplete");
 }
 
+const globalHeaderRule = firebase.hosting.headers.find((rule) => rule.source === "**");
+const cspHeader = globalHeaderRule?.headers?.find(
+  (header) => String(header.key).toLowerCase() === "content-security-policy"
+);
+if (!cspHeader || !String(cspHeader.value).includes("script-src 'self'")) {
+  throw new Error("Strict Content-Security-Policy is missing");
+}
+if (String(cspHeader.value).includes("'unsafe-inline'")) {
+  throw new Error("Content-Security-Policy must not allow unsafe-inline");
+}
+for (const file of [
+  "hosting/assets/site.css",
+  "hosting/assets/content.js",
+]) {
+  if (!fs.existsSync(file)) throw new Error("Missing hosting asset: " + file);
+}
+
 console.log(
   "Validation passed:",
   feed.articles.length,
