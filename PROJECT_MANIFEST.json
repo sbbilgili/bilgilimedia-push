@@ -12,8 +12,23 @@
   "github": {
     "repository": "sbbilgili/bilgilimedia-push",
     "authoritative_branch": "main",
-    "rejected_branch": "android-production-rebuild-1-4-9",
-    "rejected_pr": 18
+    "rejected_android_rebuilds": [
+      {
+        "pr": 16,
+        "branch": "production-android-source",
+        "reason": "UI did not match golden 1.4.8 on device"
+      },
+      {
+        "pr": 18,
+        "branch": "android-production-rebuild-1-4-9",
+        "reason": "UI did not match golden 1.4.8 on device"
+      },
+      {
+        "pr": 20,
+        "branch": "exact-1-4-8-bytecode-recovery",
+        "reason": "UI/behavior still differed; notification screen and Back behavior among mismatches"
+      }
+    ]
   },
   "firebase": {
     "project_id": "bilgilimedia-60d6f",
@@ -23,5 +38,5 @@
     "preview_package": "com.bilgilimedia.mobile.media.preview",
     "preview_app_id": "1:190776938532:android:56fff2dc4359a7ac4788b1"
   },
-  "critical_note": "Exact original 1.4.8 native source recovery is not complete. Golden APK is authoritative until exact recovery is finished."
+  "critical_note": "Exact original 1.4.8 native source recovery is not complete. Golden APK is authoritative. Do not use PR #16, #18 or #20 as final Android source. Package/Firebase/API/AAB changes must not alter the golden UI/behavior."
 }
