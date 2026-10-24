@@ -50,14 +50,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Android API 36
+      - name: Install Android API 36 and official ELF audit tools
         shell: bash
         run: |
           set -euo pipefail
           SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -type f -path "*/bin/sdkmanager" | sort -V | tail -1)"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+          "$SDKMANAGER"             "platforms;android-36"             "build-tools;35.0.0"             "ndk;28.0.12433566"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
@@ -100,17 +100,30 @@ jobs:
 
           AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort -V | tail -1)"
           ZIPALIGN="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name zipalign | sort -V | tail -1)"
+          LLVM_OBJDUMP="$ANDROID_SDK_ROOT/ndk/28.0.12433566/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-objdump"
+          LLVM_READELF="$ANDROID_SDK_ROOT/ndk/28.0.12433566/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           test -x "$AAPT"
           test -x "$ZIPALIGN"
+          test -x "$LLVM_OBJDUMP"
+          test -x "$LLVM_READELF"
 
           "$AAPT" dump badging "$RELEASE_APK" > "$RUNNER_TEMP/release-badging.txt"
           grep -F "package: name='com.bilgilimedia.mobile' versionCode='23' versionName='1.4.9'" "$RUNNER_TEMP/release-badging.txt"
           grep -F "sdkVersion:'26'" "$RUNNER_TEMP/release-badging.txt"
           grep -F "targetSdkVersion:'36'" "$RUNNER_TEMP/release-badging.txt"
 
+          # Android's official ZIP packaging check for 16 KB page-size support.
           "$ZIPALIGN" -c -P 16 -v 4 "$RELEASE_APK"
 
-          RELEASE_APK="$RELEASE_APK" python3 <<'PY'
+          # Verify the AAB itself requests 16 KB page alignment.
+          BUNDLETOOL="$RUNNER_TEMP/bundletool-all-1.18.3.jar"
+          curl --fail --location --silent --show-error             --output "$BUNDLETOOL"             "https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar"
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $BUNDLETOOL" | sha256sum --check -
+          java -jar "$BUNDLETOOL" dump config --bundle="$RELEASE_AAB" > "$RUNNER_TEMP/bundle-config.txt"
+          grep -F "PAGE_ALIGNMENT_16K" "$RUNNER_TEMP/bundle-config.txt"
+
+          # Android's official ELF inspection tools: llvm-objdump + llvm-readelf.
+          RELEASE_APK="$RELEASE_APK"           LLVM_OBJDUMP="$LLVM_OBJDUMP"           LLVM_READELF="$LLVM_READELF"           python3 <<'PY'
           import os
           import re
           import subprocess
@@ -118,36 +131,63 @@ jobs:
           import zipfile
 
           apk = os.environ["RELEASE_APK"]
-          native_entries = []
+          objdump = os.environ["LLVM_OBJDUMP"]
+          readelf = os.environ["LLVM_READELF"]
+
           with zipfile.ZipFile(apk) as archive:
               native_entries = [
                   name for name in archive.namelist()
-                  if name.startswith("lib/") and name.endswith(".so")
+                  if name.startswith(("lib/arm64-v8a/", "lib/x86_64/"))
+                  and name.endswith(".so")
               ]
+
               with tempfile.TemporaryDirectory() as tmp:
                   for name in native_entries:
                       output = os.path.join(tmp, name.replace("/", "_"))
                       with open(output, "wb") as handle:
                           handle.write(archive.read(name))
-                      program_headers = subprocess.check_output(
-                          ["readelf", "-lW", output], text=True
+
+                      objdump_text = subprocess.check_output(
+                          [objdump, "-p", output], text=True
                       )
-                      load_lines = [
-                          line for line in program_headers.splitlines()
-                          if re.match(r"^\\s*LOAD\\s", line)
+                      load_alignments = [
+                          int(match.group(1))
+                          for line in objdump_text.splitlines()
+                          if (match := re.search(r"^\\s*LOAD\\s+.*\\balign 2\\*\\*(\\d+)\\s*$", line))
                       ]
-                      if not load_lines:
+                      if not load_alignments:
                           raise SystemExit(f"No ELF LOAD segments found in {name}")
-                      for line in load_lines:
-                          align_token = line.split()[-1]
-                          alignment = int(align_token, 16)
-                          if alignment < 0x4000:
+                      if min(load_alignments) < 14:
+                          raise SystemExit(
+                              f"{name}: LOAD alignment below 2**14: {load_alignments}"
+                          )
+
+                      readelf_text = subprocess.check_output(
+                          [readelf, "-Wl", output], text=True
+                      )
+                      relro_lines = [
+                          line.strip()
+                          for line in readelf_text.splitlines()
+                          if line.strip().startswith("GNU_RELRO")
+                      ]
+                      for line in relro_lines:
+                          fields = line.split()
+                          if len(fields) < 6:
+                              raise SystemExit(f"{name}: cannot parse GNU_RELRO: {line}")
+                          virt_addr = int(fields[2], 16)
+                          mem_size = int(fields[5], 16)
+                          if (virt_addr + mem_size) % 0x4000 != 0:
                               raise SystemExit(
-                                  f"{name}: ELF LOAD alignment {align_token} is below 0x4000"
+                                  f"{name}: GNU_RELRO end is not 16 KB aligned: {line}"
                               )
-                      print(f"{name}: ELF LOAD alignment is 16 KB compatible")
+
+                      print(
+                          f"{name}: LOAD >= 2**14; "
+                          + ("RELRO 16 KB aligned" if relro_lines else "no RELRO segment")
+                      )
+
           if not native_entries:
-              print("No native .so files in release APK; ELF page-size check not applicable.")
+              print("No arm64-v8a/x86_64 native libraries; ELF check not applicable.")
           PY
 
           echo "QA APK bytes: $(stat -c%s "$DEBUG_APK")"
