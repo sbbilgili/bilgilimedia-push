@@ -1,5 +1,4 @@
 name: BilgiliMedia Automatic Push
-# manual-test-trigger-20261024
 
 on:
   schedule:
