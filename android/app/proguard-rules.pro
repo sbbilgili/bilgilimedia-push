@@ -1,0 +1,3 @@
+-keep class com.bilgilimedia.mobile.BilgiliFirebaseMessagingService { *; }
+-keep class com.bilgilimedia.mobile.BootReceiver { *; }
+-keep class com.bilgilimedia.mobile.ContentCheckJobService { *; }
