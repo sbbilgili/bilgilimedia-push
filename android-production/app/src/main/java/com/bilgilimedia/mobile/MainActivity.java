@@ -25,6 +25,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -159,6 +160,17 @@ public class MainActivity extends Activity {
         root.addView(bottomNav, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         renderBottomNav();
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int bottomInset;
+            if (Build.VERSION.SDK_INT >= 30) {
+                bottomInset = insets.getInsets(WindowInsets.Type.systemBars()).bottom;
+            } else {
+                bottomInset = insets.getSystemWindowInsetBottom();
+            }
+            bottomNav.setPadding(0, dp(4), 0, dp(4) + bottomInset);
+            return insets;
+        });
+        root.requestApplyInsets();
         styleSystemBars();
     }
 
