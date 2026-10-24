@@ -662,14 +662,7 @@ public class MainActivity extends Activity {
         content.addView(menuCard("▣ Bildirimler",notifyState,()->showScreen("notifications")));
         content.addView(menuCard("▤ Okuma Geçmişi",historyIds().size()+" kayıt",()->showScreen("history")));
 
-        if(!config.sections.isEmpty()){
-            sectionTitle("İçerik Bölümleri","Uzaktan yönetilen kategori yapısı");
-            for(Models.Section s:config.sections){
-                int n=0; for(Models.Category c:config.categories) if(s.id.equals(c.sectionId)) n++;
-                final String sec=s.id;
-                content.addView(menuCard(s.title,n+" kategori",()->showSection(sec)));
-            }
-        }
+
 
         sectionTitle("Bilgi","Gizlilik ve uygulama bilgileri");
         content.addView(menuCard("▣ Gizlilik","Veri kullanımı ve gizlilik politikası",()->showScreen("privacy")));
