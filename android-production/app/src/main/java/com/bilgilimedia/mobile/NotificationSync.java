@@ -13,12 +13,20 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Keeps Firebase topic subscriptions aligned with the user's local notification preferences.
+ * Keeps Firebase topic subscriptions aligned with stable category IDs.
  *
- * known_fcm_topics contains only subscriptions confirmed by Firebase. Failed operations are
- * not recorded as successful, so a later sync can retry them safely.
+ * Legacy 1.4.8 preferences stored visible category names. They are migrated once to
+ * notify_category_ids while the legacy name set is kept in sync for backward compatibility.
+ * known_fcm_topics contains only operations confirmed by Firebase.
  */
 final class NotificationSync {
+    private static final String KEY_SELECTED_IDS = "notify_category_ids";
+    private static final String KEY_SELECTED_IDS_INITIALIZED =
+            "notify_category_ids_initialized";
+    private static final String KEY_LEGACY_NAMES = "notify_categories";
+    private static final String KEY_LEGACY_INITIALIZED =
+            "notify_categories_initialized";
+
     private static final Object LOCK = new Object();
     private static final Set<String> IN_FLIGHT = new HashSet<>();
 
@@ -29,29 +37,14 @@ final class NotificationSync {
 
         SharedPreferences prefs =
                 context.getSharedPreferences(DataRepository.PREFS, Context.MODE_PRIVATE);
-
+        Set<String> selectedIds = selectedCategoryIds(context, config);
         boolean master = prefs.getBoolean("notify_master", true);
-        Set<String> selected = new HashSet<>(
-                prefs.getStringSet("notify_categories", new HashSet<>()));
-        boolean initialized = prefs.getBoolean("notify_categories_initialized", false);
-
-        if (!initialized) {
-            for (Models.Category category : config.categories) {
-                if (category.name != null && !category.name.isEmpty()) {
-                    selected.add(category.name);
-                }
-            }
-            prefs.edit()
-                    .putStringSet("notify_categories", new HashSet<>(selected))
-                    .putBoolean("notify_categories_initialized", true)
-                    .apply();
-        }
 
         Set<String> desired = new LinkedHashSet<>();
         if (master) {
             for (Models.Category category : config.categories) {
                 if (category.topic == null || category.topic.isEmpty()) continue;
-                if (selected.contains(category.name)) desired.add(category.topic);
+                if (selectedIds.contains(category.id)) desired.add(category.topic);
             }
         }
 
@@ -87,6 +80,98 @@ final class NotificationSync {
             }
             editor.apply();
         });
+    }
+
+    static Set<String> selectedCategoryIds(Context context, AppConfig config) {
+        SharedPreferences prefs =
+                context.getSharedPreferences(DataRepository.PREFS, Context.MODE_PRIVATE);
+        synchronized (LOCK) {
+            ensureSelectionMigrated(prefs, config);
+            return new LinkedHashSet<>(
+                    prefs.getStringSet(KEY_SELECTED_IDS, new HashSet<>()));
+        }
+    }
+
+    static void setCategorySelected(
+            Context context, AppConfig config, String categoryId, boolean selected) {
+        SharedPreferences prefs =
+                context.getSharedPreferences(DataRepository.PREFS, Context.MODE_PRIVATE);
+        synchronized (LOCK) {
+            ensureSelectionMigrated(prefs, config);
+            Set<String> ids = new LinkedHashSet<>(
+                    prefs.getStringSet(KEY_SELECTED_IDS, new HashSet<>()));
+            if (selected) ids.add(categoryId);
+            else ids.remove(categoryId);
+            sanitizeIds(ids, config);
+            persistSelection(prefs, config, ids);
+        }
+    }
+
+    static boolean isCategorySelected(
+            Context context,
+            AppConfig config,
+            String categoryId,
+            String categoryName) {
+        Set<String> ids = selectedCategoryIds(context, config);
+        if (ids.isEmpty()) return false;
+
+        if (categoryId != null && !categoryId.isEmpty()) {
+            return ids.contains(categoryId);
+        }
+        for (Models.Category category : config.categories) {
+            if (category.name.equals(categoryName)) return ids.contains(category.id);
+        }
+        return false;
+    }
+
+    private static void ensureSelectionMigrated(
+            SharedPreferences prefs, AppConfig config) {
+        if (config == null) return;
+
+        Set<String> ids = new LinkedHashSet<>();
+        boolean idsInitialized = prefs.getBoolean(KEY_SELECTED_IDS_INITIALIZED, false);
+
+        if (idsInitialized) {
+            ids.addAll(prefs.getStringSet(KEY_SELECTED_IDS, new HashSet<>()));
+            sanitizeIds(ids, config);
+            persistSelection(prefs, config, ids);
+            return;
+        }
+
+        boolean legacyInitialized = prefs.getBoolean(KEY_LEGACY_INITIALIZED, false);
+        if (legacyInitialized) {
+            Set<String> legacyNames = new HashSet<>(
+                    prefs.getStringSet(KEY_LEGACY_NAMES, new HashSet<>()));
+            for (Models.Category category : config.categories) {
+                if (legacyNames.contains(category.name)) ids.add(category.id);
+            }
+        } else {
+            for (Models.Category category : config.categories) {
+                ids.add(category.id);
+            }
+        }
+        persistSelection(prefs, config, ids);
+    }
+
+    private static void sanitizeIds(Set<String> ids, AppConfig config) {
+        Set<String> valid = new HashSet<>();
+        for (Models.Category category : config.categories) valid.add(category.id);
+        ids.retainAll(valid);
+    }
+
+    private static void persistSelection(
+            SharedPreferences prefs, AppConfig config, Set<String> ids) {
+        Set<String> legacyNames = new LinkedHashSet<>();
+        for (Models.Category category : config.categories) {
+            if (ids.contains(category.id)) legacyNames.add(category.name);
+        }
+
+        prefs.edit()
+                .putStringSet(KEY_SELECTED_IDS, new HashSet<>(ids))
+                .putBoolean(KEY_SELECTED_IDS_INITIALIZED, true)
+                .putStringSet(KEY_LEGACY_NAMES, new HashSet<>(legacyNames))
+                .putBoolean(KEY_LEGACY_INITIALIZED, true)
+                .apply();
     }
 
     private static void subscribe(
@@ -160,17 +245,31 @@ final class NotificationSync {
 
     static void saveTopicMap(Context context, AppConfig config) {
         if (context == null || config == null) return;
-        JSONObject map = new JSONObject();
+
+        JSONObject nameToTopic = new JSONObject();
+        JSONObject idToTopic = new JSONObject();
+        JSONObject nameToId = new JSONObject();
         for (Map.Entry<String, String> entry : config.categoryTopicMap().entrySet()) {
             try {
-                map.put(entry.getKey(), entry.getValue());
+                nameToTopic.put(entry.getKey(), entry.getValue());
             } catch (Exception ignored) {
-                // Both values are strings; keep the remaining valid mappings if one fails.
+                // Keep other mappings if a single JSON insertion fails.
             }
         }
+        for (Models.Category category : config.categories) {
+            try {
+                idToTopic.put(category.id, category.topic);
+                nameToId.put(category.name, category.id);
+            } catch (Exception ignored) {
+                // Keep other mappings if a single JSON insertion fails.
+            }
+        }
+
         context.getSharedPreferences(DataRepository.PREFS, Context.MODE_PRIVATE)
                 .edit()
-                .putString("category_topic_map", map.toString())
+                .putString("category_topic_map", nameToTopic.toString())
+                .putString("category_id_topic_map", idToTopic.toString())
+                .putString("category_name_id_map", nameToId.toString())
                 .apply();
     }
 }
