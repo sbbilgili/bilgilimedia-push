@@ -1,8 +1,6 @@
 name: BilgiliMedia Automatic Push
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
   push:
     branches:
@@ -10,11 +8,12 @@ on:
     paths:
       - "content/feed.json"
       - "hosting/app-config.json"
+      - "package.json"
       - "scripts/check-feed.js"
       - ".github/workflows/automatic-push.yml"
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 concurrency:
@@ -28,54 +27,66 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           workload_identity_provider: projects/190776938532/locations/global/workloadIdentityPools/github-actions/providers/bilgilimedia-push
           service_account: firebase-adminsdk-fbsvc@bilgilimedia-60d6f.iam.gserviceaccount.com
           project_id: bilgilimedia-60d6f
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
 
       - name: Install dependencies
         run: npm install --omit=dev --no-audit --no-fund
 
-      - name: Verify Firebase Admin ADC
+      - name: Verify FCM access without sending
         shell: bash
         run: |
           node <<'NODE'
-          const admin = require("firebase-admin");
-          admin.credential.applicationDefault().getAccessToken()
-            .then((token) => {
-              if (!token || !token.access_token) {
-                throw new Error("No Google OAuth access token returned");
-              }
-              console.log("Firebase Admin ADC token acquisition succeeded.");
-            })
+          const { applicationDefault, initializeApp } = require("firebase-admin/app");
+          const { getMessaging } = require("firebase-admin/messaging");
+
+          initializeApp({
+            credential: applicationDefault(),
+            projectId: "bilgilimedia-60d6f",
+          });
+
+          getMessaging()
+            .send(
+              {
+                topic: "genel",
+                data: { healthcheck: "true" },
+              },
+              true
+            )
+            .then(() => console.log("FCM dry-run validation succeeded; no notification was delivered."))
             .catch((error) => {
               console.error(error);
               process.exit(1);
             });
           NODE
 
-      - name: Check repository feed and send topic push
-        run: node scripts/check-feed.js
-
-      - name: Save content state
+      - name: Prepare previous feed
+        if: github.event_name == 'push'
         shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
         run: |
-          if git diff --quiet -- state/known.json; then
-            echo "No state change to commit."
-            exit 0
+          PREVIOUS_FEED="$RUNNER_TEMP/previous-feed.json"
+          if [ -n "${BEFORE_SHA:-}" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE_SHA:content/feed.json" 2>/dev/null; then
+            git show "$BEFORE_SHA:content/feed.json" > "$PREVIOUS_FEED"
+            echo "PREVIOUS_FEED_PATH=$PREVIOUS_FEED" >> "$GITHUB_ENV"
+            echo "Previous feed loaded from $BEFORE_SHA."
+          else
+            echo "No previous feed is available; this run will validate only and will not send historical notifications."
           fi
-          git config user.name "BilgiliMedia Bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add state/known.json
-          git commit -m "Update automatic push content state"
-          git pull --rebase origin main
-          git push
+
+      - name: Check repository feed and send new-item push
+        run: node scripts/check-feed.js
