@@ -13,33 +13,43 @@ function loadTopicMap() {
     throw new Error("Invalid app-config categories");
   }
 
-  const map = {};
+  const byName = {};
+  const byId = {};
   const topics = new Set();
 
   for (const item of config.categories) {
     if (!item || item.enabled === false) continue;
 
+    const id = String(item.id || "").trim();
     const name = String(item.name || "").trim();
     const topic = String(item.topic || "").trim();
 
-    if (!name || !topic) {
-      throw new Error("Enabled category is missing name or topic");
+    if (!id || !name || !topic) {
+      throw new Error("Enabled category is missing id, name, or topic");
+    }
+    if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(id)) {
+      throw new Error("Invalid stable category id: " + id);
     }
     if (!/^[a-zA-Z0-9._~%-]+$/.test(topic)) {
       throw new Error("Invalid FCM topic name: " + topic);
     }
-    if (Object.prototype.hasOwnProperty.call(map, name)) {
+    if (Object.prototype.hasOwnProperty.call(byName, name)) {
       throw new Error("Duplicate category name: " + name);
+    }
+    if (Object.prototype.hasOwnProperty.call(byId, id)) {
+      throw new Error("Duplicate category id: " + id);
     }
     if (topics.has(topic)) {
       throw new Error("Duplicate FCM topic: " + topic);
     }
 
-    map[name] = topic;
+    const mapping = { id, name, topic };
+    byName[name] = mapping;
+    byId[id] = mapping;
     topics.add(topic);
   }
 
-  return map;
+  return { byName, byId };
 }
 
 function readFeed(filePath, label) {
@@ -68,18 +78,26 @@ function readFeed(filePath, label) {
 
 const TOPICS = loadTopicMap();
 
+function resolveCategory(article) {
+  const categoryId = String(article?.categoryId || "").trim();
+  if (categoryId && TOPICS.byId[categoryId]) return TOPICS.byId[categoryId];
+  const name = String(article?.category || "").trim();
+  return TOPICS.byName[name] || null;
+}
+
 function createMessage(article) {
-  const topic = TOPICS[article.category];
-  if (!topic) {
+  const mapping = resolveCategory(article);
+  if (!mapping) {
     console.log("Skipping disabled or unmapped category:", article.category, article.id);
     return null;
   }
 
   return {
-    topic,
+    topic: mapping.topic,
     data: {
       article_id: String(article.id || ""),
-      category: String(article.category || ""),
+      category_id: mapping.id,
+      category: mapping.name,
       title: String(article.title || "Yeni BilgiliMedia içeriği"),
       body: String(
         article.summary ||
