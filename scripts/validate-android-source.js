@@ -269,6 +269,8 @@ requireAll(appConfig, [
   'parseNavigation',
   'MAX_NAV_DEPTH = 4',
   'MAX_NAV_ITEMS = 100',
+  'item.pageId = safeId(object.optString("pageId", ""))',
+  'Models.ExtraPage page = findPage(config, item.pageId)',
   'isTrustedBilgiliUrl',
   'TOPIC_PATTERN'
 ], "Schema v2/extensibility contract");
