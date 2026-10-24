@@ -110,6 +110,46 @@ jobs:
 
           "$ZIPALIGN" -c -P 16 -v 4 "$RELEASE_APK"
 
+          RELEASE_APK="$RELEASE_APK" python3 <<'PY'
+          import os
+          import re
+          import subprocess
+          import tempfile
+          import zipfile
+
+          apk = os.environ["RELEASE_APK"]
+          native_entries = []
+          with zipfile.ZipFile(apk) as archive:
+              native_entries = [
+                  name for name in archive.namelist()
+                  if name.startswith("lib/") and name.endswith(".so")
+              ]
+              with tempfile.TemporaryDirectory() as tmp:
+                  for name in native_entries:
+                      output = os.path.join(tmp, name.replace("/", "_"))
+                      with open(output, "wb") as handle:
+                          handle.write(archive.read(name))
+                      program_headers = subprocess.check_output(
+                          ["readelf", "-lW", output], text=True
+                      )
+                      load_lines = [
+                          line for line in program_headers.splitlines()
+                          if re.match(r"^\\s*LOAD\\s", line)
+                      ]
+                      if not load_lines:
+                          raise SystemExit(f"No ELF LOAD segments found in {name}")
+                      for line in load_lines:
+                          align_token = line.split()[-1]
+                          alignment = int(align_token, 16)
+                          if alignment < 0x4000:
+                              raise SystemExit(
+                                  f"{name}: ELF LOAD alignment {align_token} is below 0x4000"
+                              )
+                      print(f"{name}: ELF LOAD alignment is 16 KB compatible")
+          if not native_entries:
+              print("No native .so files in release APK; ELF page-size check not applicable.")
+          PY
+
           echo "QA APK bytes: $(stat -c%s "$DEBUG_APK")"
           echo "Release APK bytes: $(stat -c%s "$RELEASE_APK")"
           echo "Production AAB bytes: $(stat -c%s "$RELEASE_AAB")"
