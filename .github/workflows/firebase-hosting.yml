@@ -3,9 +3,10 @@ name: Deploy Firebase Hosting
 on:
   push:
     paths:
+      - "content/feed.json"
       - "hosting/**"
-      - "state/known.json"
       - "firebase.json"
+      - "scripts/build-web-content.js"
       - ".github/workflows/firebase-hosting.yml"
   workflow_dispatch:
 
@@ -42,13 +43,11 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
           chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
 
-      - name: Snapshot live content for web fallback
+      - name: Publish repository content feed
         shell: bash
         run: |
-          curl --fail --silent --show-error --location \
-            "https://superjsonblob.com/api/jsonBlob/075eca5d-5acd-49fe-87ba-579a4c6ab434" \
-            -o hosting/feed.json
-          node -e "const f=require('./hosting/feed.json'); if(!Array.isArray(f.articles)||f.articles.length<1) process.exit(1); console.log('Web feed snapshot:', f.version, f.articles.length)"
+          cp content/feed.json hosting/feed.json
+          node -e "const f=require('./hosting/feed.json'); if(!Array.isArray(f.articles)||f.articles.length<1) process.exit(1); console.log('Publishing feed:', f.version, f.articles.length)"
 
       - name: Build static article pages
         run: node scripts/build-web-content.js
