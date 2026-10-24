@@ -17,6 +17,10 @@ const data = read("android-production/app/src/main/java/com/bilgilimedia/mobile/
 const social = read("android-production/app/src/main/java/com/bilgilimedia/mobile/SocialData.java");
 const messaging = read("android-production/app/src/main/java/com/bilgilimedia/mobile/BilgiliFirebaseMessagingService.java");
 const job = read("android-production/app/src/main/java/com/bilgilimedia/mobile/ContentCheckJobService.java");
+const notificationSync = read("android-production/app/src/main/java/com/bilgilimedia/mobile/NotificationSync.java");
+const notificationHelper = read("android-production/app/src/main/java/com/bilgilimedia/mobile/NotificationHelper.java");
+const appConfig = read("android-production/app/src/main/java/com/bilgilimedia/mobile/AppConfig.java");
+const appClass = read("android-production/app/src/main/java/com/bilgilimedia/mobile/BilgiliMediaApp.java");
 
 requireAll(gradle, [
   'applicationId = "com.bilgilimedia.mobile"',
@@ -178,8 +182,24 @@ requireAll(main, [
   'if ("article".equals(screen))',
   'showScreen(previousScreen == null ? "home" : previousScreen)',
   'showScreen("more")',
-  'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()'
+  'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()',
+  'getOnBackInvokedDispatcher().registerOnBackInvokedCallback',
+  'android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT',
+  'this::handleBackNavigation',
+  'public void onBackPressed()',
+  'handleBackNavigation();'
 ], "Golden back-navigation contract");
+
+const onCreateStart = main.indexOf("protected void onCreate");
+const onCreateEnd = main.indexOf("protected void onNewIntent", onCreateStart);
+if (onCreateStart < 0 || onCreateEnd < 0) throw new Error("MainActivity lifecycle methods missing");
+const onCreateBlock = main.slice(onCreateStart, onCreateEnd);
+if (onCreateBlock.includes("requestNotificationPermissionIfNeeded();")) {
+  throw new Error("Golden 1.4.8 must not auto-prompt notification permission at app startup");
+}
+if (main.includes("super.onBackPressed()")) {
+  throw new Error("Golden home-screen back behavior must not finish the Activity");
+}
 requireAll(main, [
   'typeLabel.setPadding(0, dp(12), 0, 0)',
   'sortLabel.setPadding(0, dp(5), 0, 0)',
@@ -201,5 +221,90 @@ requireAll(main, [
 if (!main.includes('sectionTitle("BilgiliMedia","İletişim")')) throw new Error("Golden About contact heading missing");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
+
+
+requireAll(notificationSync, [
+  'task.isSuccessful()',
+  'updateKnown(prefs, topic, true, "bağlı")',
+  'updateKnown(prefs, topic, false, "kapalı")',
+  '"topic_state_" + topic',
+  'IN_FLIGHT'
+], "Reliable FCM topic-sync contract");
+if (notificationSync.includes('putStringSet("known_fcm_topics", new HashSet<>(desired))')) {
+  throw new Error("FCM topics must not be marked subscribed before Firebase confirms success");
+}
+
+requireAll(notificationHelper, [
+  'static boolean canNotify(Context context)',
+  'Manifest.permission.POST_NOTIFICATIONS',
+  'manager.areNotificationsEnabled()',
+  'catch (SecurityException ignored)'
+], "Notification runtime-safety contract");
+
+requireAll(messaging, [
+  'if (!NotificationHelper.canNotify(this)) return;',
+  'if (selectionInitialized && selected.isEmpty()) return;',
+  'if (!NotificationHelper.show(this, id, category, title, body)) return;'
+], "FCM delivery preference contract");
+
+requireAll(job, [
+  'if (!NotificationHelper.canNotify(this)) return;',
+  'if (selectionInitialized && selected.isEmpty()) return;',
+  'executor.shutdownNow()',
+  'task.cancel(true)'
+], "Background notification job contract");
+
+requireAll(data, [
+  'new AtomicFile(file)',
+  'connection.setInstanceFollowRedirects(false)',
+  '"bilgilimedia-60d6f.web.app".equalsIgnoreCase',
+  'httpsOrEmpty',
+  'Invalid bundled JSON'
+], "Hardened content transport/cache contract");
+
+requireAll(appConfig, [
+  'CLIENT_SCHEMA_VERSION = 2',
+  'minimumClientSchemaVersion',
+  'parseNavigation',
+  'MAX_NAV_DEPTH = 4',
+  'MAX_NAV_ITEMS = 100',
+  'isTrustedBilgiliUrl',
+  'TOPIC_PATTERN'
+], "Schema v2/extensibility contract");
+if (appConfig.includes('"developer"')) {
+  throw new Error("Remote navigation must not expose the hidden developer diagnostics screen");
+}
+
+requireAll(appClass, [
+  'catch (RuntimeException ignored)',
+  'putBoolean("firebase_ready", firebaseReady)'
+], "Firebase graceful-degradation contract");
+
+requireAll(main, [
+  'decodeCoverSafely(file)',
+  'bounds.inJustDecodeBounds = true',
+  'io.shutdownNow()'
+], "Image/lifecycle safety contract");
+
+const forbiddenPermissions = [
+  "android.permission.ACCESS_FINE_LOCATION",
+  "android.permission.ACCESS_COARSE_LOCATION",
+  "android.permission.CAMERA",
+  "android.permission.RECORD_AUDIO",
+  "android.permission.READ_CONTACTS",
+  "android.permission.WRITE_CONTACTS",
+  "android.permission.READ_SMS",
+  "android.permission.SEND_SMS",
+  "android.permission.READ_PHONE_STATE",
+  "android.permission.MANAGE_EXTERNAL_STORAGE"
+];
+for (const permission of forbiddenPermissions) {
+  if (manifest.includes(permission)) throw new Error("Unexpected sensitive permission: " + permission);
+}
+if (/storePassword|keyPassword|storeFile\s*=|signingConfig\s*=/.test(gradle)) {
+  throw new Error("Signing secrets/config must stay outside the repository");
+}
+
+console.log("Hardened Android production-source checks passed.");
 
 console.log("Exact golden 1.4.8 DEX contract validated:", socialCount, "social accounts.");
