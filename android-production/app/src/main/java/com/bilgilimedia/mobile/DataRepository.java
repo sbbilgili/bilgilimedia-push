@@ -17,9 +17,12 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 final class DataRepository {
     static final String FEED_URL = "https://bilgilimedia-60d6f.web.app/feed.json";
@@ -32,10 +35,8 @@ final class DataRepository {
     private static final int MAX_ARTICLES = 1_000;
     private static final int MAX_SOURCES_PER_ARTICLE = 20;
     private static final long CACHE_FRESH_MS = 300_000L;
-
-    private interface RawValidator {
-        void validate(String raw) throws Exception;
-    }
+    private static final Pattern STABLE_ID_PATTERN =
+            Pattern.compile("[a-z0-9][a-z0-9_-]{0,63}");
 
     static final class Snapshot {
         int version = 1;
@@ -47,36 +48,117 @@ final class DataRepository {
     }
 
     static Snapshot load(Context context, boolean forceNetwork) throws Exception {
-        String feed = loadRemoteOrFallback(
-                context,
-                FEED_URL,
-                "feed-cache.json",
-                "feed.json",
-                forceNetwork,
-                raw -> parseFeed(raw));
-        String config = loadRemoteOrFallback(
-                context,
-                CONFIG_URL,
-                "config-cache.json",
-                "app-config.json",
-                forceNetwork,
-                raw -> AppConfig.parse(raw));
+        File feedCache = new File(context.getFilesDir(), "feed-cache.json");
+        File configCache = new File(context.getFilesDir(), "config-cache.json");
 
+        if (!forceNetwork && cachePairIsFresh(feedCache, configCache)) {
+            try {
+                Snapshot cached = buildSnapshot(
+                        readFile(feedCache), readFile(configCache));
+                persistSnapshot(context, cached);
+                return cached;
+            } catch (Exception invalidFreshCache) {
+                deleteCachePair(feedCache, configCache);
+            }
+        }
+
+        try {
+            String remoteFeed = fetch(FEED_URL);
+            String remoteConfig = fetch(CONFIG_URL);
+            Snapshot remote = buildSnapshot(remoteFeed, remoteConfig);
+
+            // Never poison the last-known-good cache with an unvalidated or mismatched pair.
+            writeAtomic(feedCache, remoteFeed);
+            writeAtomic(configCache, remoteConfig);
+            persistSnapshot(context, remote);
+            return remote;
+        } catch (Exception remoteFailure) {
+            if (feedCache.exists() && configCache.exists()) {
+                try {
+                    Snapshot cached = buildSnapshot(
+                            readFile(feedCache), readFile(configCache));
+                    persistSnapshot(context, cached);
+                    return cached;
+                } catch (Exception invalidCache) {
+                    deleteCachePair(feedCache, configCache);
+                }
+            }
+
+            SharedPreferences prefs =
+                    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            String storedFeed = prefs.getString("content_cache", "");
+            String storedConfig = prefs.getString("app_config_cache", "");
+            if (storedFeed != null && !storedFeed.isEmpty()
+                    && storedConfig != null && !storedConfig.isEmpty()) {
+                try {
+                    Snapshot stored = buildSnapshot(storedFeed, storedConfig);
+                    persistSnapshot(context, stored);
+                    return stored;
+                } catch (Exception ignored) {
+                    // Continue to immutable bundled last-resort data.
+                }
+            }
+
+            String bundledFeed = read(context.getAssets().open("feed.json"));
+            String bundledConfig = read(context.getAssets().open("app-config.json"));
+            Snapshot bundled = buildSnapshot(bundledFeed, bundledConfig);
+            persistSnapshot(context, bundled);
+            return bundled;
+        }
+    }
+
+    private static Snapshot buildSnapshot(String feed, String config) throws Exception {
         Snapshot snapshot = parseFeed(feed);
         AppConfig parsedConfig = AppConfig.parse(config);
+        validateFeedAgainstConfig(snapshot, parsedConfig);
+
         snapshot.feedRaw = feed;
         snapshot.configRaw = config;
         snapshot.config = parsedConfig;
+        return snapshot;
+    }
 
+    private static void validateFeedAgainstConfig(
+            Snapshot snapshot, AppConfig config) {
+        Map<String, Models.Category> categories = new HashMap<>();
+        for (Models.Category category : config.categories) {
+            categories.put(category.id, category);
+        }
+
+        for (Models.Article article : snapshot.articles) {
+            Models.Category category = categories.get(article.categoryId);
+            if (category == null) {
+                throw new IllegalArgumentException(
+                        "Unknown article categoryId: " + article.categoryId);
+            }
+            if (!category.name.equals(article.category)) {
+                throw new IllegalArgumentException(
+                        "Article category/categoryId mismatch: " + article.id);
+            }
+        }
+    }
+
+    private static void persistSnapshot(Context context, Snapshot snapshot) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit()
                 .putInt("feed_version", snapshot.version)
-                .putString("content_cache", feed)
-                .putString("app_config_cache", config)
-                .putString("config_updated_at", parsedConfig.updatedAt)
+                .putString("content_cache", snapshot.feedRaw)
+                .putString("app_config_cache", snapshot.configRaw)
+                .putString("config_updated_at", snapshot.config.updatedAt)
                 .putLong("content_updated_at", System.currentTimeMillis())
                 .apply();
-        return snapshot;
+    }
+
+    private static boolean cachePairIsFresh(File feedCache, File configCache) {
+        if (!feedCache.exists() || !configCache.exists()) return false;
+        long now = System.currentTimeMillis();
+        return now - feedCache.lastModified() < CACHE_FRESH_MS
+                && now - configCache.lastModified() < CACHE_FRESH_MS;
+    }
+
+    private static void deleteCachePair(File feedCache, File configCache) {
+        feedCache.delete();
+        configCache.delete();
     }
 
     static Snapshot parseFeed(String raw) throws Exception {
@@ -109,11 +191,12 @@ final class DataRepository {
             article.body = object.optString("body", "").trim();
 
             if (article.id.isEmpty()
+                    || !STABLE_ID_PATTERN.matcher(article.categoryId).matches()
                     || article.category.isEmpty()
                     || article.title.isEmpty()
                     || article.summary.isEmpty()
                     || article.body.isEmpty()) {
-                throw new IllegalArgumentException("Article missing required data");
+                throw new IllegalArgumentException("Article missing/invalid required data");
             }
             if (!ids.add(article.id)) {
                 throw new IllegalArgumentException("Duplicate article id: " + article.id);
@@ -159,64 +242,6 @@ final class DataRepository {
         }
 
         return snapshot;
-    }
-
-    private static String loadRemoteOrFallback(
-            Context context,
-            String url,
-            String cacheName,
-            String assetName,
-            boolean forceNetwork,
-            RawValidator validator) throws Exception {
-        File cache = new File(context.getFilesDir(), cacheName);
-
-        if (!forceNetwork
-                && cache.exists()
-                && System.currentTimeMillis() - cache.lastModified() < CACHE_FRESH_MS) {
-            try {
-                String cached = readFile(cache);
-                validator.validate(cached);
-                return cached;
-            } catch (Exception invalidCache) {
-                cache.delete();
-            }
-        }
-
-        try {
-            String remote = fetch(url);
-            validator.validate(remote);
-            writeAtomic(cache, remote);
-            return remote;
-        } catch (Exception remoteFailure) {
-            if (cache.exists()) {
-                try {
-                    String cached = readFile(cache);
-                    validator.validate(cached);
-                    return cached;
-                } catch (Exception invalidCache) {
-                    cache.delete();
-                }
-            }
-
-            SharedPreferences prefs =
-                    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-            String key = assetName.equals("feed.json")
-                    ? "content_cache"
-                    : "app_config_cache";
-            String stored = prefs.getString(key, "");
-            if (stored != null && !stored.isEmpty()) {
-                try {
-                    validator.validate(stored);
-                    return stored;
-                } catch (Exception ignored) {
-                    // Continue to the immutable bundled fallback.
-                }
-            }
-
-            String bundled = read(context.getAssets().open(assetName));
-            validator.validate(bundled);
-            return bundled;
-        }
     }
 
     static String fetch(String value) throws Exception {
