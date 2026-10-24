@@ -218,16 +218,27 @@ if (sponsorAds.enabled) {
   }
 }
 
-if (!Array.isArray(assetLinks) || assetLinks.length < 1) {
-  throw new Error("assetlinks.json must contain at least one statement");
+if (!Array.isArray(assetLinks) || assetLinks.length < 2) {
+  throw new Error("assetlinks.json must contain preview and production statements");
 }
+
+const requiredAppLinkPackages = new Set([
+  "com.bilgilimedia.mobile.media.preview",
+  "com.bilgilimedia.mobile",
+]);
+const seenAppLinkPackages = new Set();
+
 for (const statement of assetLinks) {
   const target = statement?.target || {};
   if (target.namespace !== "android_app") {
     throw new Error("assetlinks target namespace must be android_app");
   }
-  if (!String(target.package_name || "").startsWith("com.bilgilimedia.mobile")) {
-    throw new Error("Unexpected Android package in assetlinks: " + target.package_name);
+  const packageName = String(target.package_name || "");
+  if (!packageName.startsWith("com.bilgilimedia.mobile")) {
+    throw new Error("Unexpected Android package in assetlinks: " + packageName);
+  }
+  if (requiredAppLinkPackages.has(packageName)) {
+    seenAppLinkPackages.add(packageName);
   }
   if (!Array.isArray(target.sha256_cert_fingerprints) || target.sha256_cert_fingerprints.length < 1) {
     throw new Error("assetlinks target must include a SHA-256 fingerprint");
@@ -236,6 +247,12 @@ for (const statement of assetLinks) {
     if (!/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/i.test(String(fp))) {
       throw new Error("Invalid SHA-256 fingerprint format: " + fp);
     }
+  }
+}
+
+for (const packageName of requiredAppLinkPackages) {
+  if (!seenAppLinkPackages.has(packageName)) {
+    throw new Error("Missing required App Links package: " + packageName);
   }
 }
 

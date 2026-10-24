@@ -13,10 +13,10 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 
 ## 2. Android build / Play AAB
 
-- [ ] Üretim package name: `com.bilgilimedia.mobile`.
-- [ ] Önerilen sonraki production versionCode: `23` veya daha yüksek.
-- [ ] Target SDK: API 36 veya Play'in yayın gününde istediği daha yeni seviye.
-- [ ] minSdk: API 26 kararı korunuyor.
+- [x] Üretim package name kararı: `com.bilgilimedia.mobile`.
+- [x] Production sürüm politikası: final AAB versionCode `23` veya daha yüksek olacak.
+- [x] Referans hedef: API 36; 31 Ağustos 2026 itibarıyla yeni Play uygulamaları için minimum gereklilik API 36.
+- [x] minSdk: API 26 kararı korunuyor.
 - [ ] Google Play için **AAB** üretildi; APK yalnız cihaz QA'sı için kullanılıyor.
 - [ ] Release AAB üretim/upload anahtarıyla imzalandı.
 - [x] Referans APK'da gereksiz hassas izin bulunmuyor.
@@ -29,8 +29,8 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 
 ## 3. Firebase / bildirim
 
-- [ ] Firebase Console'da production paket `com.bilgilimedia.mobile` Android uygulaması kayıtlı.
-- [ ] Production `google-services.json` final kaynak projeye ait; preview dosyası kullanılmıyor.
+- [x] Firebase Console'da production paket `com.bilgilimedia.mobile` Android uygulaması kayıtlı.
+- [x] Production `google-services.json` Firebase Console'dan indirildi ve production paket kaydı doğrulandı.\n- [ ] Production `google-services.json` final kaynak projeye entegre edildi; preview dosyası production build'de kullanılmıyor.
 - [x] Backend FCM gönderimi OIDC/WIF ile anahtarsız çalışıyor.
 - [x] FCM erişimi dry-run ile doğrulanıyor.
 - [ ] Android 13+ bildirim izni gerçek cihazda test edildi.
@@ -41,7 +41,7 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 ## 4. App Links
 
 - [x] Preview `assetlinks.json` kaydı mevcut ve preview sertifikasıyla eşleşiyor.
-- [ ] `assetlinks.json` production paket `com.bilgilimedia.mobile` için kayıt içeriyor.
+- [x] `assetlinks.json` production paket `com.bilgilimedia.mobile` için mevcut production sertifikasıyla kayıt içeriyor.
 - [ ] Production SHA-256 değeri Play Console > App integrity > **App signing certificate** ile birebir eşleşiyor.
 - [ ] Play App Signing birden fazla dağıtım sertifikası gösteriyorsa gerekli tüm fingerprint'ler API sağlayıcılarında ve assetlinks'te kaydedildi.
 - [ ] App Link ile içerik açma ve tarayıcı fallback gerçek cihazda test edildi.
@@ -52,7 +52,7 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 - [x] Eski production AAB'nin sertifikası aynı fingerprint ile eşleşiyor.
 - [ ] Google Play App Signing ilk release'ten önce mevcut production app signing key'i kullanacak şekilde yapılandırıldı; böylece sideload edilmiş eski `com.bilgilimedia.mobile` kurulumlarıyla imza sürekliliği korunuyor.
 - [ ] App signing key ile upload key ayrıldı ve upload key yedeği güvenli yerde tutuluyor.
-- [ ] Özel anahtar/parola GitHub veya herkese açık dosyalara eklenmedi.
+- [x] Özel anahtar/parola GitHub veya herkese açık dosyalara eklenmedi.
 
 ## 6. Gizlilik / Data Safety
 
@@ -71,7 +71,7 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 
 ## 7. Play Console / geliştirici hesabı
 
-- [ ] Geliştirici kimlik doğrulaması tamamlandı.
+- [ ] Geliştirici kimlik doğrulaması tamamlandı. (Kimlik belgesi bekleniyor.)
 - [ ] `com.bilgilimedia.mobile` Play package adı 30 Eylül 2026 sonrası paket kayıt gerekliliklerine göre Play Console'da kayıtlı/doğrulanmış görünüyor.
 - [ ] Uygulama oluşturma ekranında doğru uygulama adı, varsayılan dil ve uygulama türü seçildi.
 - [ ] Uygulama erişimi: giriş gerekmiyor şeklinde beyan edildi.
