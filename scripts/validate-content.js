@@ -221,6 +221,9 @@ for (const categoryId of categoriesById.keys()) {
 }
 
 const sponsorAds = config.sponsorAds || {};
+if (sponsorAds.enabled === true) {
+  throw new Error("Sponsor ads are release-locked until Play Console ads declaration is updated");
+}
 if (Array.isArray(sponsorAds.items) && sponsorAds.items.length > 50) {
   throw new Error("sponsorAds.items may contain at most 50 items");
 }
