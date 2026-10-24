@@ -27,6 +27,9 @@ jobs:
       - name: Validate content and configuration
         run: node scripts/validate-content.js
 
+      - name: Validate Android production source contract
+        run: node scripts/validate-android-source.js
+
       - name: Validate push script without credentials
         run: node scripts/check-feed.js
 
