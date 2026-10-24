@@ -234,7 +234,11 @@ requireAll(notificationSync, [
   'ensureSelectionMigrated',
   'persistSelection',
   'selectedIds.contains(category.id)',
-  'category_name_id_map'
+  'category_name_id_map',
+  'putStringSet("desired_fcm_topics", new HashSet<>(desired))',
+  'isCurrentlyDesired(prefs, topic)',
+  'if (reverse) unsubscribe(messaging, prefs, topic);',
+  'if (reverse) subscribe(messaging, prefs, topic);'
 ], "Reliable FCM topic-sync contract");
 if (notificationSync.includes('putStringSet("known_fcm_topics", new HashSet<>(desired))')) {
   throw new Error("FCM topics must not be marked subscribed before Firebase confirms success");
