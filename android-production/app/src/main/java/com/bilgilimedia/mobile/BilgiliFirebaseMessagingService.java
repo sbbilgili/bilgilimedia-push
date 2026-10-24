@@ -41,20 +41,12 @@ public final class BilgiliFirebaseMessagingService extends FirebaseMessagingServ
 
         Map<String, String> data = message.getData();
         String id = value(data.get("article_id"));
+        String categoryId = value(data.get("category_id"));
         String category = value(data.get("category"));
         String title = value(data.get("title"));
         String body = value(data.get("body"));
 
-        Set<String> selected = new HashSet<>(
-                prefs.getStringSet("notify_categories", new HashSet<>()));
-        boolean selectionInitialized =
-                prefs.getBoolean("notify_categories_initialized", false);
-
-        // An explicitly empty selection means "no category notifications".
-        if (selectionInitialized && selected.isEmpty()) return;
-        if (!category.isEmpty() && !selected.isEmpty() && !selected.contains(category)) {
-            return;
-        }
+        if (!categoryAllowed(prefs, categoryId, category)) return;
 
         Set<String> notified = new HashSet<>(
                 prefs.getStringSet("notified_content_ids", new HashSet<>()));
@@ -75,6 +67,29 @@ public final class BilgiliFirebaseMessagingService extends FirebaseMessagingServ
                     .putStringSet("known_content_ids", known)
                     .apply();
         }
+    }
+
+    private boolean categoryAllowed(
+            SharedPreferences prefs, String categoryId, String categoryName) {
+        try {
+            String raw = prefs.getString("app_config_cache", "");
+            if (raw != null && !raw.isEmpty()) {
+                AppConfig config = AppConfig.parse(raw);
+                return NotificationSync.isCategorySelected(
+                        this, config, categoryId, categoryName);
+            }
+        } catch (Exception ignored) {
+            // Use the legacy name preference only if cached config cannot be parsed.
+        }
+
+        Set<String> selectedNames = new HashSet<>(
+                prefs.getStringSet("notify_categories", new HashSet<>()));
+        boolean legacyInitialized =
+                prefs.getBoolean("notify_categories_initialized", false);
+        if (legacyInitialized && selectedNames.isEmpty()) return false;
+        return categoryName.isEmpty()
+                || selectedNames.isEmpty()
+                || selectedNames.contains(categoryName);
     }
 
     private static String value(String value) {
