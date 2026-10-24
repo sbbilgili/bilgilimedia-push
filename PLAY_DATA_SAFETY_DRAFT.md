@@ -88,12 +88,13 @@ Yerel uygulama verileri uygulama içindeki temizleme seçenekleriyle veya uygula
 
 ## Reklam
 
-`sponsorAds.enabled=false` olduğu sürece:
+Mevcut production release'te iki kapı birlikte kapalıdır: `sponsorAds.enabled=false` ve Android kaynakta `SPONSOR_FEATURE_ENABLED=false`.
 
 - “Contains ads” için önerilen cevap: **No / Hayır**.
 - AdMob veya başka reklam SDK'sı yoktur.
+- Remote config tek başına sponsor kartını açamaz.
 
-Sponsorlu içerik etkinleştirilmeden önce “Contains ads”, gizlilik politikası ve Data Safety beyanı yeniden değerlendirilmelidir.
+Sponsorlu içerik etkinleştirilmeden önce `SPONSOR_FEATURE_ENABLED` bilinçli bir release değişikliğiyle açılmalı; aynı release öncesinde “Contains ads”, gizlilik politikası ve Data Safety beyanı yeniden değerlendirilmelidir.
 
 ## Final AAB için zorunlu tekrar kontrol
 
