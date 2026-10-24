@@ -21,6 +21,7 @@ const notificationSync = read("android-production/app/src/main/java/com/bilgilim
 const notificationHelper = read("android-production/app/src/main/java/com/bilgilimedia/mobile/NotificationHelper.java");
 const appConfig = read("android-production/app/src/main/java/com/bilgilimedia/mobile/AppConfig.java");
 const appClass = read("android-production/app/src/main/java/com/bilgilimedia/mobile/BilgiliMediaApp.java");
+const signingScript = read("scripts/sign-android-aab.sh");
 
 requireAll(gradle, [
   'applicationId = "com.bilgilimedia.mobile"',
@@ -359,6 +360,17 @@ for (const permission of forbiddenPermissions) {
 }
 if (/storePassword|keyPassword|storeFile\s*=|signingConfig\s*=/.test(gradle)) {
   throw new Error("Signing secrets/config must stay outside the repository");
+}
+
+requireAll(signingScript, [
+  '-storepass:env BILGILIMEDIA_STORE_PASSWORD',
+  '-keypass:env BILGILIMEDIA_KEY_PASSWORD',
+  'jarsigner -verify -strict -verbose',
+  'BILGILIMEDIA_EXPECTED_CERT_SHA256',
+  'Signing certificate fingerprint mismatch.'
+], "Secret-safe AAB signing contract");
+if (/storepass\s+[^:$\s]|keypass\s+[^:$\s]/.test(signingScript)) {
+  throw new Error("Signing helper must not embed a literal keystore password");
 }
 
 console.log("Hardened Android production-source checks passed.");
