@@ -73,12 +73,6 @@ public final class ContentCheckJobService extends JobService {
         if (!prefs.getBoolean("notify_master", true)) return;
         if (!NotificationHelper.canNotify(this)) return;
 
-        Set<String> selected = new HashSet<>(
-                prefs.getStringSet("notify_categories", new HashSet<>()));
-        boolean selectionInitialized =
-                prefs.getBoolean("notify_categories_initialized", false);
-        if (selectionInitialized && selected.isEmpty()) return;
-
         DataRepository.Snapshot snapshot = DataRepository.load(this, true);
         if (Thread.currentThread().isInterrupted()) return;
 
@@ -93,6 +87,13 @@ public final class ContentCheckJobService extends JobService {
             return;
         }
 
+        Set<String> selectedIds =
+                NotificationSync.selectedCategoryIds(this, snapshot.config);
+        if (selectedIds.isEmpty()) {
+            DataRepository.setKnownIds(this, now);
+            return;
+        }
+
         Set<String> known = DataRepository.getKnownIds(this);
         Set<String> notified = new HashSet<>(
                 prefs.getStringSet("notified_content_ids", new HashSet<>()));
@@ -100,7 +101,10 @@ public final class ContentCheckJobService extends JobService {
         for (Models.Article article : snapshot.articles) {
             if (Thread.currentThread().isInterrupted()) return;
             if (known.contains(article.id) || notified.contains(article.id)) continue;
-            if (!selected.isEmpty() && !selected.contains(article.category)) continue;
+            if (!NotificationSync.isCategorySelected(
+                    this, snapshot.config, article.categoryId, article.category)) {
+                continue;
+            }
 
             if (NotificationHelper.show(
                     this, article.id, article.category, article.title, article.summary)) {
