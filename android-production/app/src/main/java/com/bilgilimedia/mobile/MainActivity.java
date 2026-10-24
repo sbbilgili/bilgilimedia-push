@@ -96,7 +96,11 @@ public class MainActivity extends Activity {
         applyThemeMode();
         buildShell();
         pendingArticleId = extractArticleId(getIntent());
-        requestNotificationPermissionIfNeeded();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    this::handleBackNavigation);
+        }
         load(false);
     }
 
@@ -110,6 +114,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        handleBackNavigation();
+    }
+
+    private void handleBackNavigation() {
         if ("article".equals(screen)) {
             showScreen(previousScreen == null ? "home" : previousScreen);
             return;
