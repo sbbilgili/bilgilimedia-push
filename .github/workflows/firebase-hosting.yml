@@ -50,6 +50,9 @@ jobs:
             -o hosting/feed.json
           node -e "const f=require('./hosting/feed.json'); if(!Array.isArray(f.articles)||f.articles.length<1) process.exit(1); console.log('Web feed snapshot:', f.version, f.articles.length)"
 
+      - name: Build static article pages
+        run: node scripts/build-web-content.js
+
       - name: Deploy Firebase Hosting
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
