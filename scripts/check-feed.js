@@ -6,16 +6,45 @@ const FEED_URL =
   "https://superjsonblob.com/api/jsonBlob/075eca5d-5acd-49fe-87ba-579a4c6ab434";
 const STATE_PATH = path.join(process.cwd(), "state", "known.json");
 
-const TOPICS = {
-  "Genel": "genel",
-  "Belgesel": "belgesel",
-  "Tarih": "tarih",
-  "Doğa": "doga",
-  "Yemek": "yemek",
-  "Teknoloji": "teknoloji",
-  "Animasyon": "animasyon",
-  "Çizgi Film": "cizgifilm",
-};
+const CONFIG_PATH = path.join(process.cwd(), "hosting", "app-config.json");
+
+function slugifyTopic(value) {
+  return String(value || "")
+    .replace(/İ/g, "I")
+    .replace(/ı/g, "i")
+    .replace(/Ğ/g, "G")
+    .replace(/ğ/g, "g")
+    .replace(/Ü/g, "U")
+    .replace(/ü/g, "u")
+    .replace(/Ş/g, "S")
+    .replace(/ş/g, "s")
+    .replace(/Ö/g, "O")
+    .replace(/ö/g, "o")
+    .replace(/Ç/g, "C")
+    .replace(/ç/g, "c")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "");
+}
+
+function loadTopicMap() {
+  try {
+    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    const map = {};
+    for (const item of config.categories || []) {
+      if (item && item.enabled !== false && item.name && item.topic) {
+        map[String(item.name)] = String(item.topic);
+      }
+    }
+    return map;
+  } catch (error) {
+    console.warn("App config topic map unavailable, using generated topic slugs.");
+    return {};
+  }
+}
+
+const TOPICS = loadTopicMap();
 
 function readState() {
   if (!fs.existsSync(STATE_PATH)) {
@@ -59,7 +88,7 @@ async function getFeed() {
 }
 
 function createMessage(article) {
-  const topic = TOPICS[article.category];
+  const topic = TOPICS[article.category] || slugifyTopic(article.category);
   if (!topic) return null;
 
   return {
