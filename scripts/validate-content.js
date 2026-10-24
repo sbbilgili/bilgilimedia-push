@@ -148,8 +148,8 @@ const navigation = config.navigation;
 if (!navigation || navigation.version !== 1 || !Array.isArray(navigation.items) || navigation.items.length < 1) {
   throw new Error("navigation.version=1 with a non-empty items array is required");
 }
-if (!Number.isInteger(navigation.maxDepth) || navigation.maxDepth < 1 || navigation.maxDepth > 6) {
-  throw new Error("navigation.maxDepth must be between 1 and 6");
+if (!Number.isInteger(navigation.maxDepth) || navigation.maxDepth < 1 || navigation.maxDepth > 4) {
+  throw new Error("navigation.maxDepth must be between 1 and 4");
 }
 
 const allowedScreens = new Set(["home", "saved", "history", "accounts", "notifications", "about"]);
