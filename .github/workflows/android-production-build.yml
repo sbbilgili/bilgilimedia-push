@@ -17,17 +17,32 @@ permissions:
 
 jobs:
   build-android:
-    name: Android source + build
+    name: Android parity + lint + build + artifact audit
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Validate recovered source contract
+      - name: Validate golden and hardened source contracts
         run: node scripts/validate-android-source.js
+
+      - name: Reject tracked signing/private-key material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '\.(jks|keystore|p12|pfx)$|(^|/)service-account.*\.json$|(^|/)google-services-production\.json$'; then
+            echo "Forbidden signing or service-account material is tracked."
+            exit 1
+          fi
+          if git grep -nE -- '-----BEGIN ([A-Z0-9 ]+ )?PRIVATE KEY-----' -- .; then
+            echo "Private key material detected."
+            exit 1
+          fi
 
       - name: Set up Java
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
@@ -38,6 +53,7 @@ jobs:
       - name: Install Android API 36
         shell: bash
         run: |
+          set -euo pipefail
           SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -type f -path "*/bin/sdkmanager" | sort -V | tail -1)"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
@@ -51,30 +67,62 @@ jobs:
       - name: Prepare offline content fallback
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p android-production/app/src/main/assets
           cp content/feed.json android-production/app/src/main/assets/feed.json
           cp hosting/app-config.json android-production/app/src/main/assets/app-config.json
 
-      - name: Build QA APK and production AAB
+      - name: Lint and build QA/release artifacts
         working-directory: android-production
-        run: gradle --no-daemon clean :app:assembleDebug :app:bundleRelease
+        run: |
+          gradle --no-daemon clean \
+            :app:lintRelease \
+            :app:assembleDebug \
+            :app:assembleRelease \
+            :app:bundleRelease
 
-      - name: Audit generated artifacts
+      - name: Audit generated APK/AAB
         shell: bash
         run: |
-          test -s android-production/app/build/outputs/apk/debug/app-debug.apk
-          test -s android-production/app/build/outputs/bundle/release/app-release.aab
-          unzip -t android-production/app/build/outputs/apk/debug/app-debug.apk >/dev/null
-          unzip -t android-production/app/build/outputs/bundle/release/app-release.aab >/dev/null
-          echo "QA APK bytes: $(stat -c%s android-production/app/build/outputs/apk/debug/app-debug.apk)"
-          echo "Production AAB bytes: $(stat -c%s android-production/app/build/outputs/bundle/release/app-release.aab)"
+          set -euo pipefail
+          DEBUG_APK="android-production/app/build/outputs/apk/debug/app-debug.apk"
+          RELEASE_APK="$(find android-production/app/build/outputs/apk/release -type f -name '*.apk' | head -1)"
+          RELEASE_AAB="android-production/app/build/outputs/bundle/release/app-release.aab"
+
+          test -s "$DEBUG_APK"
+          test -n "$RELEASE_APK"
+          test -s "$RELEASE_APK"
+          test -s "$RELEASE_AAB"
+
+          unzip -t "$DEBUG_APK" >/dev/null
+          unzip -t "$RELEASE_APK" >/dev/null
+          unzip -t "$RELEASE_AAB" >/dev/null
+
+          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort -V | tail -1)"
+          ZIPALIGN="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name zipalign | sort -V | tail -1)"
+          test -x "$AAPT"
+          test -x "$ZIPALIGN"
+
+          "$AAPT" dump badging "$RELEASE_APK" > "$RUNNER_TEMP/release-badging.txt"
+          grep -F "package: name='com.bilgilimedia.mobile' versionCode='23' versionName='1.4.9'" "$RUNNER_TEMP/release-badging.txt"
+          grep -F "sdkVersion:'26'" "$RUNNER_TEMP/release-badging.txt"
+          grep -F "targetSdkVersion:'36'" "$RUNNER_TEMP/release-badging.txt"
+
+          "$ZIPALIGN" -c -P 16 -v 4 "$RELEASE_APK"
+
+          echo "QA APK bytes: $(stat -c%s "$DEBUG_APK")"
+          echo "Release APK bytes: $(stat -c%s "$RELEASE_APK")"
+          echo "Production AAB bytes: $(stat -c%s "$RELEASE_AAB")"
 
       - name: Upload Android candidate artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: BilgiliMedia-Android-1.4.9-candidate
+          name: BilgiliMedia-Android-1.4.9-final-parity-candidate
           if-no-files-found: error
           retention-days: 14
           path: |
-            android-production/app/build/outputs/apk/debug/app-debug.apk
-            android-production/app/build/outputs/bundle/release/app-release.aab
+            android-production/app/build/outputs/apk/debug/*.apk
+            android-production/app/build/outputs/apk/release/*.apk
+            android-production/app/build/outputs/bundle/release/*.aab
+            android-production/app/build/reports/lint-results-release.html
+            android-production/app/build/reports/lint-results-release.txt
