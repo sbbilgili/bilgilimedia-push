@@ -189,6 +189,16 @@ requireAll(main, [
   'for (Models.Article article : articles) categoryNames.add(article.category)',
   'new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54))'
 ], "Golden search spacing/category source");
+requireAll(main, [
+  'String[] labels = {"Sistem","Açık","Koyu"}',
+  'String[] values = {"system","light","dark"}',
+  'getStringSet("saved").size()',
+  'tv("Yerel kayıtları temizle",14,brand(),true)',
+  'clear.setPadding(0, dp(18), 0, dp(18))',
+  'sectionTitle("Bildirimler","Firebase Cloud Messaging")',
+  'sectionTitle("İzinler","Mevcut önizleme sürümü")',
+  'menuCard("↗ Gizlilik politikasını aç","bilgilimedia-60d6f.web.app/privacy"'
+], "Golden Settings/Privacy contract");
 if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplication missing");
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
