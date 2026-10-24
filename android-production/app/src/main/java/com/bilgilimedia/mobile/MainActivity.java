@@ -713,3 +713,90 @@ public class MainActivity extends Activity {
         });
     }
 
+    private GradientDrawable gradientFor(String category){
+        int[] colors;
+        switch(category){
+            case "Belgesel":colors=new int[]{0xff16324f,0xff376996};break;
+            case "Tarih":colors=new int[]{0xff5b3b22,0xff9a6a3a};break;
+            case "Doğa":colors=new int[]{0xff1d5b3b,0xff46a06b};break;
+            case "Yemek":colors=new int[]{0xff9b3d23,0xffe07a38};break;
+            case "Teknoloji":colors=new int[]{0xff263b80,0xff5e78df};break;
+            case "Animasyon":colors=new int[]{0xff6930c3,0xffb5179e};break;
+            case "Çizgi Film":colors=new int[]{0xff1f6f8b,0xff4cc9f0};break;
+            case "AI":colors=new int[]{0xff3a0ca3,0xff7209b7};break;
+            case "HIGGS":colors=new int[]{0xff111827,0xffe50914};break;
+            default:colors=new int[]{0xff7f1d1d,0xffef4444};
+        }
+        GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TL_BR,colors);g.setCornerRadius(dp(18));return g;
+    }
+
+    private String categoryMark(String c){
+        switch(c){case "Belgesel":return "◆";case "Tarih":return "⌁";case "Doğa":return "❧";case "Yemek":return "◌";case "Teknoloji":return "⌛";case "Animasyon":return "◉";case "Çizgi Film":return "✦";case "AI":return "AI";case "HIGGS":return "H";default:return "✎";}
+    }
+
+    private Models.Article featuredArticle(){if(!featuredId.isEmpty()){Models.Article f=findArticle(featuredId);if(f!=null)return f;}return articles.isEmpty()?null:articles.get(0);}
+    private Models.Article findArticle(String id){for(Models.Article a:articles)if(a.id.equals(id))return a;return null;}
+    private List<Models.Article> filterCategory(String category){List<Models.Article> out=new ArrayList<>();for(Models.Article a:articles)if(category.equals(a.category))out.add(a);return out;}
+    private List<Models.Article> limit(List<Models.Article> src,int max){return new ArrayList<>(src.subList(0,Math.min(max,src.size())));}
+    private List<Models.Article> historyArticles(){List<Models.Article> out=new ArrayList<>();for(String id:historyIds()){Models.Article a=findArticle(id);if(a!=null)out.add(a);}return out;}
+
+    private void openPendingArticle(){if(pendingArticleId==null||pendingArticleId.isEmpty()||articles.isEmpty())return;Models.Article a=findArticle(pendingArticleId);if(a!=null){pendingArticleId="";openArticle(a);}}
+    private String extractArticleId(Intent intent){if(intent==null)return "";String id=intent.getStringExtra("open_article_id");if(id!=null&&!id.isEmpty())return id;Uri data=intent.getData();if(data!=null&&"https".equalsIgnoreCase(data.getScheme())&&"bilgilimedia-60d6f.web.app".equalsIgnoreCase(data.getHost())){List<String>s=data.getPathSegments();if(s.size()>=2&&"content".equals(s.get(0)))return s.get(1);}return "";}
+
+    private void addHistory(String id){List<String> ids=historyIds();ids.remove(id);ids.add(0,id);while(ids.size()>60)ids.remove(ids.size()-1);prefs.edit().putString("history_all",TextUtils.join("|",ids)).putLong("history_time_"+id,System.currentTimeMillis()).apply();}
+    private List<String> historyIds(){String raw=prefs.getString("history_all","");List<String> out=new ArrayList<>();if(raw==null||raw.isEmpty())return out;for(String x:raw.split("\\|"))if(!x.isEmpty())out.add(x);return out;}
+    private void incrementRead(String id){prefs.edit().putInt("reads_"+id,readCount(id)+1).apply();}
+    private int readCount(String id){return prefs.getInt("reads_"+id,0);}
+
+    private Set<String> getStringSet(String key){return new LinkedHashSet<>(prefs.getStringSet(key,new HashSet<>()));}
+    private boolean isSavedArticle(String id){Set<String>s=getStringSet("saved");return s.contains("a:"+id)||s.contains(id);}
+    private boolean isSavedAccount(String url){return getStringSet("saved").contains("p:"+url);}
+    private void toggleSavedArticle(String id){Set<String>s=getStringSet("saved");String k="a:"+id;if(s.contains(k)||s.contains(id)){s.remove(k);s.remove(id);}else s.add(k);prefs.edit().putStringSet("saved",new HashSet<>(s)).apply();}
+    private void toggleSavedAccount(String url){Set<String>s=getStringSet("saved");String k="p:"+url;if(s.contains(k))s.remove(k);else s.add(k);prefs.edit().putStringSet("saved",new HashSet<>(s)).apply();}
+    private int countSavedArticles(){int n=0;for(Models.Article a:articles)if(isSavedArticle(a.id))n++;return n;}
+    private Set<String> getNotifyCategories(){return new LinkedHashSet<>(prefs.getStringSet("notify_categories",new HashSet<>()));}
+
+    private void shareArticle(Models.Article a){String url=DataRepository.HOST_BASE+"/content/"+Uri.encode(a.id)+"?v="+feedVersion;Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,a.title);i.putExtra(Intent.EXTRA_TEXT,a.title+"\n"+url);startActivity(Intent.createChooser(i,"İçeriği paylaş"));}
+    private void shareApp(){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\n"+WEB);startActivity(Intent.createChooser(i,"Uygulamayı paylaş"));}
+    private void email(){try{startActivity(new Intent(Intent.ACTION_SENDTO,Uri.parse("mailto:"+EMAIL)));}catch(Exception e){Toast.makeText(this,"E-posta uygulaması açılamadı",Toast.LENGTH_SHORT).show();}}
+
+    private void openSocial(Models.SocialAccount a){
+        String pkg=null;if("Instagram".equals(a.platform))pkg="com.instagram.android";else if("YouTube".equals(a.platform))pkg="com.google.android.youtube";else if("Facebook".equals(a.platform))pkg="com.facebook.katana";else if("TikTok".equals(a.platform))pkg="com.zhiliaoapp.musically";
+        try{Intent i=new Intent(Intent.ACTION_VIEW,Uri.parse(a.url));if(pkg!=null)i.setPackage(pkg);startActivity(i);}catch(Exception e){openUrl(a.url);}
+    }
+    private void openUrl(String url){try{Uri u=Uri.parse(url);if(!"https".equalsIgnoreCase(u.getScheme()))throw new IllegalArgumentException();Intent i=new Intent(Intent.ACTION_VIEW,u);i.addCategory(Intent.CATEGORY_BROWSABLE);startActivity(i);}catch(Exception e){Toast.makeText(this,"Bağlantı açılamadı",Toast.LENGTH_SHORT).show();}}
+    private String host(String url){try{String h=Uri.parse(url).getHost();if(h==null)return "";return h.startsWith("www.")?h.substring(4):h;}catch(Exception e){return "";}}
+
+    private void requestNotificationPermissionIfNeeded(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIFICATION);}
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_NOTIFICATION){boolean ok=grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED;prefs.edit().putBoolean("notify_master",ok).apply();NotificationSync.sync(this,config);Toast.makeText(this,ok?"Bildirim izni verildi":"Bildirim izni verilmedi",Toast.LENGTH_SHORT).show();}}
+    private boolean notificationsAllowed(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)return false;android.app.NotificationManager nm=(android.app.NotificationManager)getSystemService(NOTIFICATION_SERVICE);return nm==null||Build.VERSION.SDK_INT<24||nm.areNotificationsEnabled();}
+
+    private void clearLocalData(){prefs.edit().remove("saved").remove("history_all").remove("theme").remove("content_cache").remove("app_config_cache").apply();File f=new File(getFilesDir(),"feed-cache.json");if(f.exists())f.delete();File c=new File(getFilesDir(),"config-cache.json");if(c.exists())c.delete();Toast.makeText(this,"Yerel kayıtlar temizlendi",Toast.LENGTH_SHORT).show();recreate();}
+    private void confirm(String message,Runnable yes){new AlertDialog.Builder(this).setMessage(message).setNegativeButton("Vazgeç",null).setPositiveButton("Temizle",(d,w)->yes.run()).show();}
+
+    private void applyThemeMode(){String mode=getSharedPreferences(DataRepository.PREFS,MODE_PRIVATE).getString("theme","system");boolean sys=(getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES;dark="dark".equals(mode)||("system".equals(mode)&&sys);}
+    private String themeLabel(String t){if("dark".equals(t))return "Koyu";if("light".equals(t))return "Açık";return "Sistem";}
+    private void styleSystemBars(){Window w=getWindow();w.setStatusBarColor(bg());w.setNavigationBarColor(card());if(Build.VERSION.SDK_INT>=23)w.getDecorView().setSystemUiVisibility(dark?0:View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);}
+
+    private int bg(){return dark?0xff0e1116:0xfff6f7f9;}
+    private int card(){return dark?0xff191d24:0xffffffff;}
+    private int text(){return dark?0xfff3f4f6:0xff15181d;}
+    private int secondary(){return dark?0xffa7afba:0xff66707c;}
+    private int muted(){return dark?0xff7c8591:0xff929aa5;}
+    private int brand(){return 0xffe50914;}
+
+    private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setBackground(round(card(),18));return c;}
+    private GradientDrawable round(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
+    private TextView tv(String s,float sp,int color,boolean bold){TextView v=new TextView(this);v.setText(s);v.setTextSize(sp);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);v.setLineSpacing(0,1.08f);return v;}
+    private TextView chip(String s,boolean selected){TextView v=tv(s,12,selected?Color.WHITE:text(),selected);v.setGravity(Gravity.CENTER);v.setPadding(dp(13),dp(8),dp(13),dp(8));v.setBackground(round(selected?brand():card(),18));v.setClickable(true);v.setFocusable(true);v.setContentDescription(s);v.setLayoutParams(margin(-2,-2,0,0,dp(7),0));return v;}
+    private TextView pill(String s,boolean primary){TextView v=tv(s,12,primary?Color.WHITE:text(),true);v.setGravity(Gravity.CENTER);v.setPadding(dp(12),dp(8),dp(12),dp(8));v.setBackground(round(primary?brand():card(),16));v.setClickable(true);v.setFocusable(true);v.setContentDescription(s);v.setLayoutParams(margin(-2,-2,dp(4),dp(4),dp(4),dp(4)));return v;}
+    private void sectionTitle(String title,String subtitle){TextView t=tv(title,19,text(),true);t.setPadding(0,dp(18),0,dp(2));content.addView(t);if(subtitle!=null&&!subtitle.isEmpty()){TextView s=tv(subtitle,12,secondary(),false);s.setPadding(0,0,0,dp(8));content.addView(s);}}
+    private TextView empty(String s){TextView v=tv(s,14,secondary(),false);v.setGravity(Gravity.CENTER);v.setPadding(dp(14),dp(30),dp(14),dp(30));return v;}
+    private void addInfo(String title,String value){content.addView(menuLine(title,value));}
+    private TextView menuLine(String title,String value){TextView v=tv(title+"\n"+value,14,text(),false);v.setPadding(dp(13),dp(10),dp(13),dp(10));v.setBackground(round(card(),14));v.setLayoutParams(margin(-1,-2,0,0,0,dp(7)));return v;}
+    private LinearLayout.LayoutParams margin(int w,int h,int l,int t,int r,int b){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(w,h);p.setMargins(dpv(l),dpv(t),dpv(r),dpv(b));return p;}
+    private int dpv(int v){if(v<0)return v;return dp(v);}
+    private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
+    private String normalize(String s){if(s==null)return "";String x=s.replace('İ','I').replace('ı','i').replace('Ğ','G').replace('ğ','g').replace('Ü','U').replace('ü','u').replace('Ş','S').replace('ş','s').replace('Ö','O').replace('ö','o').replace('Ç','C').replace('ç','c');return Normalizer.normalize(x,Normalizer.Form.NFD).replaceAll("\\p{M}+","").toLowerCase(Locale.ROOT);}
+    private String sha(String s)throws Exception{MessageDigest d=MessageDigest.getInstance("SHA-256");byte[] x=d.digest(s.getBytes(java.nio.charset.StandardCharsets.UTF_8));StringBuilder b=new StringBuilder();for(byte v:x)b.append(String.format(Locale.ROOT,"%02x",v));return b.toString();}
+}
