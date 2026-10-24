@@ -12,6 +12,11 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,3 +40,37 @@ jobs:
         run: |
           cp content/feed.json hosting/feed.json
           node scripts/build-web-content.js
+
+      - name: Validate Android golden/security source contract
+        run: node scripts/validate-android-source.js
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -type f -path "*/bin/sdkmanager" | sort -V | tail -1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Prepare Android offline fallbacks
+        shell: bash
+        run: |
+          mkdir -p android-production/app/src/main/assets
+          cp content/feed.json android-production/app/src/main/assets/feed.json
+          cp hosting/app-config.json android-production/app/src/main/assets/app-config.json
+
+      - name: Compile release Java
+        working-directory: android-production
+        run: gradle --no-daemon :app:compileReleaseJavaWithJavac
