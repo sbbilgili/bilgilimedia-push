@@ -207,7 +207,7 @@ public class MainActivity extends Activity {
                     featuredId = snapshot.featuredId;
                     NotificationSync.saveTopicMap(this, config);
                     NotificationSync.sync(this, config);
-                    initializeKnownContent();
+                    markCurrentContentKnown();
                     loading = false;
                     showScreen(screen);
                     openPendingArticle();
@@ -222,10 +222,11 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void initializeKnownContent() {
-        if (prefs.getBoolean("known_content_initialized", false)) return;
+    private void markCurrentContentKnown() {
         Set<String> ids = new HashSet<>();
-        for (Models.Article a : articles) ids.add(a.id);
+        for (Models.Article article : articles) {
+            if (article.id != null && !article.id.isEmpty()) ids.add(article.id);
+        }
         DataRepository.setKnownIds(this, ids);
     }
 
@@ -801,6 +802,7 @@ public class MainActivity extends Activity {
                 requestNotificationPermissionIfNeeded();
                 return;
             }
+            if (!master) markCurrentContentKnown();
             prefs.edit().putBoolean("notify_master", !master).apply();
             NotificationSync.sync(this, config);
             renderNotifications();
@@ -828,7 +830,9 @@ public class MainActivity extends Activity {
             chip.setGravity(Gravity.CENTER);
             chip.setOnClickListener(v -> {
                 Set<String> next = getNotifyCategories();
+                boolean enablingFirstCategory = next.isEmpty() && !next.contains(name);
                 if (next.contains(name)) next.remove(name); else next.add(name);
+                if (enablingFirstCategory) markCurrentContentKnown();
                 prefs.edit()
                         .putStringSet("notify_categories", new HashSet<>(next))
                         .putBoolean("notify_categories_initialized", true)
@@ -1285,7 +1289,7 @@ public class MainActivity extends Activity {
     }
 
     private void requestNotificationPermissionIfNeeded(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIFICATION);}
-    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_NOTIFICATION){boolean ok=grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED;prefs.edit().putBoolean("notify_master",ok).apply();NotificationSync.sync(this,config);Toast.makeText(this,ok?"Bildirim izni verildi":"Bildirim izni verilmedi",Toast.LENGTH_SHORT).show();}}
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_NOTIFICATION){boolean ok=grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED;if(ok)markCurrentContentKnown();prefs.edit().putBoolean("notify_master",ok).apply();NotificationSync.sync(this,config);Toast.makeText(this,ok?"Bildirim izni verildi":"Bildirim izni verilmedi",Toast.LENGTH_SHORT).show();}}
     private boolean notificationsAllowed(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)return false;android.app.NotificationManager nm=(android.app.NotificationManager)getSystemService(NOTIFICATION_SERVICE);return nm==null||Build.VERSION.SDK_INT<24||nm.areNotificationsEnabled();}
 
     private void clearLocalData(){prefs.edit().remove("saved").remove("history_all").remove("recent").remove("theme").remove("content_cache").remove("app_config_cache").apply();File f=new File(getFilesDir(),"feed-cache.json");if(f.exists())f.delete();File c=new File(getFilesDir(),"config-cache.json");if(c.exists())c.delete();Toast.makeText(this,"Yerel kayıtlar temizlendi",Toast.LENGTH_SHORT).show();recreate();}
