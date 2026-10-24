@@ -76,6 +76,7 @@ final class Models {
         String title = "";
         String screen = "";
         String categoryId = "";
+        String pageId = "";
         String url = "";
         int order = 0;
         final List<NavItem> children = new ArrayList<>();
