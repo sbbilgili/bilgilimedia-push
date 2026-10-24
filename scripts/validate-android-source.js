@@ -289,7 +289,8 @@ requireAll(appConfig, [
   'parseNavigation',
   'MAX_NAV_DEPTH = 4',
   'MAX_NAV_ITEMS = 100',
-  'item.pageId = safeId(object.optString("pageId", ""))',
+  'item.pageId = stableId(',
+  'object.optString("pageId", "").trim()',
   'Models.ExtraPage page = findPage(config, item.pageId)',
   'isTrustedBilgiliUrl',
   'TOPIC_PATTERN'
