@@ -22,7 +22,7 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install --omit=dev --no-audit --no-fund
+        run: npm ci --omit=dev --no-audit --no-fund
 
       - name: Validate content and configuration
         run: node scripts/validate-content.js
