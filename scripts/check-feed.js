@@ -2,9 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
 
-const FEED_URL =
-  "https://superjsonblob.com/api/jsonBlob/075eca5d-5acd-49fe-87ba-579a4c6ab434";
-const STATE_PATH = path.join(process.cwd(), "state", "known.json");
+const FEED_PATH = path.join(process.cwd(), "content", "feed.json");\nconst STATE_PATH = path.join(process.cwd(), "state", "known.json");
 
 const CONFIG_PATH = path.join(process.cwd(), "hosting", "app-config.json");
 
@@ -72,17 +70,9 @@ function writeState(feed, ids, fresh) {
 }
 
 async function getFeed() {
-  const response = await fetch(FEED_URL, {
-    headers: { "user-agent": "BilgiliMedia-GitHub-Actions/1.0" },
-  });
-
-  if (!response.ok) {
-    throw new Error("Feed HTTP " + response.status);
-  }
-
-  const feed = await response.json();
+  const feed = JSON.parse(fs.readFileSync(FEED_PATH, "utf8"));
   if (!feed || !Array.isArray(feed.articles)) {
-    throw new Error("Invalid feed response");
+    throw new Error("Invalid repository feed");
   }
   return feed;
 }
