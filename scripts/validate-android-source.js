@@ -259,9 +259,18 @@ requireAll(data, [
   'connection.setInstanceFollowRedirects(false)',
   'TRUSTED_HOST = "bilgilimedia-60d6f.web.app"',
   'TRUSTED_HOST.equalsIgnoreCase(url.getHost())',
-  'httpsOrEmpty',
-  'Invalid bundled JSON'
+  'MAX_ARTICLES = 1_000',
+  'RawValidator validator',
+  'validator.validate(remote);',
+  'validator.validate(bundled);',
+  'Duplicate article id:',
+  'requiredHttps'
 ], "Hardened content transport/cache contract");
+const remoteValidationIndex = data.indexOf('validator.validate(remote);');
+const remoteWriteIndex = data.indexOf('writeAtomic(cache, remote);');
+if (remoteValidationIndex < 0 || remoteWriteIndex < 0 || remoteValidationIndex > remoteWriteIndex) {
+  throw new Error("Remote content must pass semantic validation before it is cached");
+}
 
 requireAll(appConfig, [
   'CLIENT_SCHEMA_VERSION = 2',
