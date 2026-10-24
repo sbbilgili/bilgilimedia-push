@@ -63,6 +63,8 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
     private static final int REQ_NOTIFICATION = 1408;
+    // Release gate: enable only after Play Console ads declaration/privacy review.
+    private static final boolean SPONSOR_FEATURE_ENABLED = false;
     private static final String WEB = "https://spoo.me/bilgilimedia";
     private static final String PRIVACY = "https://bilgilimedia-60d6f.web.app/privacy/";
     private static final String EMAIL = "sukrubatuhanbilgili@gmail.com";
@@ -463,7 +465,7 @@ public class MainActivity extends Activity {
     }
 
     private void renderSponsor(String placement) {
-        if (!config.sponsorEnabled) return;
+        if (!SPONSOR_FEATURE_ENABLED || !config.sponsorEnabled) return;
         for (Models.Sponsor s : config.sponsors) {
             if (!s.enabled || (!s.placement.isEmpty() && !placement.equals(s.placement))) continue;
             LinearLayout c = panel();
