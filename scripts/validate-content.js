@@ -119,14 +119,12 @@ for (const article of feed.articles) {
   if (!categoryConfig) {
     throw new Error("Article category is not enabled in app-config: " + category);
   }
-  if (article.categoryId != null) {
-    const categoryId = requireStableId(article.categoryId, "Article categoryId " + id);
-    if (!categoriesById.has(categoryId)) {
-      throw new Error("Article categoryId is not enabled in app-config: " + categoryId);
-    }
-    if (categoriesById.get(categoryId).name !== category) {
-      throw new Error("Article category/categoryId mismatch: " + id);
-    }
+  const categoryId = requireStableId(article.categoryId, "Article categoryId " + id);
+  if (!categoriesById.has(categoryId)) {
+    throw new Error("Article categoryId is not enabled in app-config: " + categoryId);
+  }
+  if (categoriesById.get(categoryId).name !== category) {
+    throw new Error("Article category/categoryId mismatch: " + id);
   }
 
   if (!Array.isArray(article.sources) || article.sources.length < 1) {
