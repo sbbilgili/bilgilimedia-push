@@ -48,6 +48,10 @@ final class NotificationSync {
             }
         }
 
+        prefs.edit()
+                .putStringSet("desired_fcm_topics", new HashSet<>(desired))
+                .apply();
+
         Set<String> known = new HashSet<>(
                 prefs.getStringSet("known_fcm_topics", new HashSet<>()));
 
@@ -181,15 +185,18 @@ final class NotificationSync {
 
         setState(prefs, topic, "bağlanıyor");
         messaging.subscribeToTopic(topic).addOnCompleteListener(task -> {
+            boolean reverse = false;
             try {
                 if (task.isSuccessful()) {
                     updateKnown(prefs, topic, true, "bağlı");
+                    reverse = !isCurrentlyDesired(prefs, topic);
                 } else {
                     setState(prefs, topic, "hata");
                 }
             } finally {
                 end(operation);
             }
+            if (reverse) unsubscribe(messaging, prefs, topic);
         });
     }
 
@@ -200,16 +207,26 @@ final class NotificationSync {
 
         setState(prefs, topic, "ayrılıyor");
         messaging.unsubscribeFromTopic(topic).addOnCompleteListener(task -> {
+            boolean reverse = false;
             try {
                 if (task.isSuccessful()) {
                     updateKnown(prefs, topic, false, "kapalı");
+                    reverse = isCurrentlyDesired(prefs, topic);
                 } else {
                     setState(prefs, topic, "hata");
                 }
             } finally {
                 end(operation);
             }
+            if (reverse) subscribe(messaging, prefs, topic);
         });
+    }
+
+    private static boolean isCurrentlyDesired(
+            SharedPreferences prefs, String topic) {
+        Set<String> desired = new HashSet<>(
+                prefs.getStringSet("desired_fcm_topics", new HashSet<>()));
+        return desired.contains(topic);
     }
 
     private static boolean begin(String operation) {
