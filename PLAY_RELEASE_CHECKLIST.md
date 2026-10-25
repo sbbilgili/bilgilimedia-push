@@ -8,8 +8,9 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 - [x] Referans SHA-256: `dca81609a1df783de5606ee646af4bd672121aed0188a84886db1c0652ccae76`.
 - [x] Preview paket: `com.bilgilimedia.mobile.media.preview`.
 - [x] Preview imza sertifikası App Links kaydıyla eşleşiyor.
-- [x] Yeniden üretilebilir production Android kaynak projesi `final-android-hardening` / PR #23 altında oluşturuldu; final UI cihaz onayı bekleniyor.
-- [ ] Final Play build'i bu altın referansla görsel ve işlevsel regresyon testinden geçti.
+- [x] Yeniden üretilebilir production Android kaynak projesi PR #23 ile `main`e alındı.
+- [x] Kullanıcı final 1.4.9 UI baseline'ını gerçek cihazda onayladı; `ANDROID_UI_LOCK_1_4_9.md` ile kilitlendi.
+- [ ] Play-delivered final production build aynı baseline ile son regresyon testinden geçti.
 
 ## 2. Android build / Play AAB
 
