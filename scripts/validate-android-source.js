@@ -154,7 +154,7 @@ requireAll(main, [
   'new FrameLayout.LayoutParams(dp(82), dp(34)',
   '0xccd71920',
 
-  '"?v="+feedVersion',
+  '"?v=" + feedVersion',
   'private static final String APP_OPEN_LINK = "https://bilgilimedia-60d6f.web.app/open/app"',
   'private String sharedContentLink(Models.Article a)',
   '"/open/content/" + Uri.encode(a.id)',
