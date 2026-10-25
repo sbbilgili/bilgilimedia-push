@@ -22,5 +22,17 @@
         "F6:84:6E:CB:EC:19:CC:99:DB:68:2A:37:4F:47:8F:D1:9B:59:E6:96:54:2E:C5:0F:16:B5:33:0E:DD:DF:CF:6A"
       ]
     }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.bilgilimedia.mobile.qa",
+      "sha256_cert_fingerprints": [
+        "22:F6:E1:B7:48:92:E4:40:C9:A8:A1:81:3E:6A:DA:75:F5:76:7D:23:1C:CC:58:AF:9E:19:2D:27:08:D6:68:C5"
+      ]
+    }
   }
 ]
