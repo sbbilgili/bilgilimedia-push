@@ -17,6 +17,7 @@ const data = read("android-production/app/src/main/java/com/bilgilimedia/mobile/
 const social = read("android-production/app/src/main/java/com/bilgilimedia/mobile/SocialData.java");
 const messaging = read("android-production/app/src/main/java/com/bilgilimedia/mobile/BilgiliFirebaseMessagingService.java");
 const job = read("android-production/app/src/main/java/com/bilgilimedia/mobile/ContentCheckJobService.java");
+const notificationSync = read("android-production/app/src/main/java/com/bilgilimedia/mobile/NotificationSync.java");
 
 requireAll(gradle, [
   'applicationId = "com.bilgilimedia.mobile"',
@@ -34,7 +35,9 @@ if (/firebase-messaging-ktx|firebase-analytics|crashlytics|play-services-ads/i.t
 
 requireAll(manifest, [
   'android:allowBackup="false"',
+  'android:enableOnBackInvokedCallback="true"',
   'android:usesCleartextTraffic="false"',
+  'android:screenOrientation="portrait"',
   'android:autoVerify="true"',
   'android:host="bilgilimedia-60d6f.web.app"',
   'android:pathPrefix="/content/"',
@@ -165,13 +168,17 @@ requireAll(main, [
   'content.addView(menuCard(title, value, null))'
 ], "Golden menu-card helper");
 requireAll(main, [
+  'boolean master = prefs.getBoolean("notify_master", false)',
   'content.addView(menuCard("▣ Bildirim durumu", enabled ? "Açık" : "Kapalı"',
+  'if (master) {',
+  'Toast.makeText(this, "Bildirimler etkin", Toast.LENGTH_SHORT).show()',
+  'Set<String> selected = getNotifyCategories()',
   'if (index % 2 == 0)',
   'new LinearLayout.LayoutParams(0, dp(44), 1f)',
-  'putBoolean("notify_categories_initialized", true)',
+  'putStringSet("notify_categories", new HashSet<>(next))',
   'Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.',
   'Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.'
-], "Golden notification grid");
+], "Golden notification grid and preference behavior");
 if (main.includes("new CheckBox(this)")) throw new Error("Golden notification screen uses two-column pills, not CheckBox rows");
 requireAll(main, [
   'private String previousScreen = "home"',
@@ -179,21 +186,39 @@ requireAll(main, [
   'showScreen(previousScreen == null ? "home" : previousScreen)',
   'showScreen("more")',
   'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()',
-  'getOnBackInvokedDispatcher().registerOnBackInvokedCallback',
-  'this::handleBackNavigation',
+  'public void onBackPressed()',
   'private void handleBackNavigation()'
 ], "Golden back-navigation contract");
+
+if (main.includes("registerOnBackInvokedCallback") || main.includes("this::handleBackNavigation")) {
+  throw new Error("Golden 1.4.8 does not manually register an OnBackInvoked callback in MainActivity");
+}
 
 if (main.includes('pendingArticleId = extractArticleId(getIntent());\n        requestNotificationPermissionIfNeeded();')) {
   throw new Error("Notification permission must not be requested automatically on app startup");
 }
 
-requireAll(main, [
-  'NotificationSync.selectedCategoryIds(this, config)',
-  'NotificationSync.setCategorySelected(',
-  'if (!master) markCurrentContentKnown()',
-  'if(ok)markCurrentContentKnown()'
-], "Hardened notification preference contract");
+if (main.includes("notify_categories_initialized") || main.includes("selectedCategoryIds") || main.includes("setCategorySelected")) {
+  throw new Error("Golden 1.4.8 notification UI stores selected visible category names directly");
+}
+if (notificationSync.includes("notify_category_ids") || notificationSync.includes("selectedCategoryIds")) {
+  throw new Error("Non-golden ID-based notification preference migration detected");
+}
+requireAll(notificationSync, [
+  'prefs.getBoolean("notify_master", false)',
+  'prefs.getStringSet("notify_categories", new HashSet<>())',
+  'master && !selectedNames.isEmpty()',
+  'selectedNames.contains(category.name)'
+], "Golden topic-selection semantics");
+requireAll(messaging, [
+  'getBoolean("notify_master",false)',
+  'if(selected.isEmpty()||!selected.contains(category))return;'
+], "Golden FCM delivery gating");
+requireAll(job, [
+  'getBoolean("notify_master",false)',
+  'if(selected.isEmpty())return;',
+  'if(!selected.contains(a.category))continue;'
+], "Golden fallback notification gating");
 requireAll(main, [
   'typeLabel.setPadding(0, dp(12), 0, 0)',
   'sortLabel.setPadding(0, dp(5), 0, 0)',
