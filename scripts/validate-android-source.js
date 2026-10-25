@@ -184,6 +184,8 @@ requireAll(main, [
   'if (index % 2 == 0)',
   'new LinearLayout.LayoutParams(0, dp(44), 1f)',
   'putStringSet("notify_categories", new HashSet<>(next))',
+  'private static final int REQ_NOTIFICATION = 901',
+  'if (showFeedback && getNotifyCategories().isEmpty())',
   'Toast.makeText(this, "Seçili kategori yok", Toast.LENGTH_SHORT).show()',
   'Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.',
   'Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.'
