@@ -171,14 +171,23 @@ requireAll(main, [
   'boolean master = prefs.getBoolean("notify_master", false)',
   'content.addView(menuCard("▣ Bildirim durumu", enabled ? "Açık" : "Kapalı"',
   'if (master) {',
+  'syncNotifications(false)',
+  'syncNotifications(true)',
   'Toast.makeText(this, "Bildirimler etkin", Toast.LENGTH_SHORT).show()',
+  'LinkedHashSet<String> names = availableNotificationCategoryNames()',
+  'prefs.getString("app_config_cache", "")',
+  'root.optJSONArray("categories")',
+  'item.optBoolean("enabled", true)',
+  'item.optString("name", "").trim()',
+  'for (Models.Article article : articles)',
   'Set<String> selected = getNotifyCategories()',
   'if (index % 2 == 0)',
   'new LinearLayout.LayoutParams(0, dp(44), 1f)',
   'putStringSet("notify_categories", new HashSet<>(next))',
+  'Toast.makeText(this, "Seçili kategori yok", Toast.LENGTH_SHORT).show()',
   'Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.',
   'Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.'
-], "Golden notification grid and preference behavior");
+], "Golden notification grid, category source and feedback behavior");
 if (main.includes("new CheckBox(this)")) throw new Error("Golden notification screen uses two-column pills, not CheckBox rows");
 requireAll(main, [
   'private String previousScreen = "home"',
@@ -187,12 +196,11 @@ requireAll(main, [
   'showScreen("more")',
   'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()',
   'public void onBackPressed()',
-  'private void handleBackNavigation()'
-], "Golden back-navigation contract");
-
-if (main.includes("registerOnBackInvokedCallback") || main.includes("this::handleBackNavigation")) {
-  throw new Error("Golden 1.4.8 does not manually register an OnBackInvoked callback in MainActivity");
-}
+  'private void handleBackNavigation()',
+  'getOnBackInvokedDispatcher().registerOnBackInvokedCallback',
+  'android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT',
+  'this::handleBackNavigation'
+], "Golden back-navigation and Android 13+ callback contract");
 
 if (main.includes('pendingArticleId = extractArticleId(getIntent());\n        requestNotificationPermissionIfNeeded();')) {
   throw new Error("Notification permission must not be requested automatically on app startup");
@@ -207,17 +215,18 @@ if (notificationSync.includes("notify_category_ids") || notificationSync.include
 requireAll(notificationSync, [
   'prefs.getBoolean("notify_master", false)',
   'prefs.getStringSet("notify_categories", new HashSet<>())',
-  'master && !selectedNames.isEmpty()',
-  'selectedNames.contains(category.name)'
-], "Golden topic-selection semantics");
+  'prefs.getString("category_topic_map", "{}")',
+  'topicMap.optString(cleanName, "")',
+  'AppConfig.slug(cleanName)'
+], "Golden selected-name topic mapping semantics");
 requireAll(messaging, [
   'getBoolean("notify_master",false)',
-  'if(selected.isEmpty()||!selected.contains(category))return;'
+  'if(category.isEmpty())category="Genel"',
+  'if(!selected.isEmpty()&&!selected.contains(category))return;'
 ], "Golden FCM delivery gating");
 requireAll(job, [
   'getBoolean("notify_master",false)',
-  'if(selected.isEmpty())return;',
-  'if(!selected.contains(a.category))continue;'
+  'if(!selected.isEmpty()&&!selected.contains(a.category))continue;'
 ], "Golden fallback notification gating");
 requireAll(main, [
   'typeLabel.setPadding(0, dp(12), 0, 0)',
@@ -242,3 +251,8 @@ if (!messaging.includes("notified_content_ids")) throw new Error("FCM de-duplica
 if (!job.includes("known_content_ids")) throw new Error("Fallback content de-duplication missing");
 
 console.log("Exact golden 1.4.8 DEX contract validated:", socialCount, "social accounts.");
+
+if (main.includes('prefs.getBoolean("notify_master",true)') ||
+    main.includes('prefs.getBoolean("notify_master", true)')) {
+  throw new Error("notify_master must default false everywhere in the golden-compatible UI");
+}
