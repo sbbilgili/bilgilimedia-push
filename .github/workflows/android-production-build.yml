@@ -69,6 +69,13 @@ jobs:
         working-directory: android-production
         run: gradle --no-daemon --warning-mode=all :app:assembleDebug :app:assembleRelease :app:bundleRelease
 
+      - name: Record QA signing certificate
+        working-directory: android-production
+        shell: bash
+        run: |
+          mkdir -p app/build/reports
+          gradle --no-daemon :app:signingReport | tee app/build/reports/signing-report.txt
+
       - name: Audit production artifacts
         shell: bash
         run: |
@@ -86,4 +93,5 @@ jobs:
             android-production/app/build/outputs/apk/release/app-release-unsigned.apk
             android-production/app/build/outputs/bundle/release/app-release.aab
             android-production/app/build/reports/lint-results-release.html
+            android-production/app/build/reports/signing-report.txt
             android-production/app/build/reports/release-audit/summary.txt
