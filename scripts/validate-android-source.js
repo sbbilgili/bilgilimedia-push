@@ -18,6 +18,7 @@ const social = read("android-production/app/src/main/java/com/bilgilimedia/mobil
 const messaging = read("android-production/app/src/main/java/com/bilgilimedia/mobile/BilgiliFirebaseMessagingService.java");
 const job = read("android-production/app/src/main/java/com/bilgilimedia/mobile/ContentCheckJobService.java");
 const notificationSync = read("android-production/app/src/main/java/com/bilgilimedia/mobile/NotificationSync.java");
+const app = read("android-production/app/src/main/java/com/bilgilimedia/mobile/BilgiliMediaApp.java");
 
 requireAll(gradle, [
   'applicationId = "com.bilgilimedia.mobile"',
@@ -47,6 +48,20 @@ requireAll(manifest, [
 ], "Manifest contract");
 
 if (!/PREFS\s*=\s*"preferences"/.test(data)) throw new Error("Local-data compatibility must use SharedPreferences name: preferences");
+
+requireAll(data, [
+  '"bilgilimedia-60d6f.web.app".equalsIgnoreCase(u.getHost())',
+  '"bilgilimedia-60d6f.web.app".equalsIgnoreCase(finalUrl.getHost())',
+  '"https".equalsIgnoreCase(finalUrl.getProtocol())',
+  '"Redirected outside BilgiliMedia host"'
+], "Remote feed/config host restriction");
+
+requireAll(app, [
+  'try {',
+  'firebaseReady = !FirebaseApp.getApps(this).isEmpty()',
+  'catch (RuntimeException ignored)',
+  'putBoolean("firebase_ready", firebaseReady)'
+], "Firebase startup resilience");
 
 requireAll(main, [
   'header.setPadding(dp(16), dp(9), dp(12), dp(26))',
@@ -277,12 +292,13 @@ requireAll(notificationSync, [
 requireAll(messaging, [
   'getBoolean("notify_master",false)',
   'if(category.isEmpty())category="Genel"',
-  'if(!selected.isEmpty()&&!selected.contains(category))return;'
-], "Golden FCM delivery gating");
+  'if(selected.isEmpty()||!selected.contains(category))return;'
+], "Notification delivery gating");
 requireAll(job, [
   'getBoolean("notify_master",false)',
-  'if(!selected.isEmpty()&&!selected.contains(a.category))continue;'
-], "Golden fallback notification gating");
+  'if(selected.isEmpty())return;',
+  'if(!selected.contains(a.category))continue;'
+], "Fallback notification gating");
 requireAll(main, [
   'typeLabel.setPadding(0, dp(12), 0, 0)',
   'sortLabel.setPadding(0, dp(5), 0, 0)',
@@ -330,4 +346,11 @@ for (const forbidden of [
   if (main.includes(forbidden)) {
     throw new Error("Interactive redraw must use showScreen(): " + forbidden);
   }
+}
+
+if (messaging.includes('if(!selected.isEmpty()&&!selected.contains(category))return;')) {
+  throw new Error("Empty notification category selection must block FCM delivery");
+}
+if (job.includes('if(!selected.isEmpty()&&!selected.contains(a.category))continue;')) {
+  throw new Error("Empty notification category selection must block fallback notifications");
 }
