@@ -190,19 +190,32 @@ requireAll(main, [
   'Henüz kategori seçmedin. Bildirim almak için en az bir kategori seç.',
   'Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.'
 ], "Golden notification grid, category source and feedback behavior");
+
+requireAll(main, [
+  'private void renderNotifications(){',
+  'content.removeAllViews();',
+  'showScreen("notifications")'
+], "Notification screen must redraw cleanly without duplicate category blocks");
+if ((main.match(/renderNotifications\(\);/g) || []).length !== 1) {
+  throw new Error("renderNotifications() must only be called from the screen router; interactive updates must use showScreen(\"notifications\")");
+}
 if (main.includes("new CheckBox(this)")) throw new Error("Golden notification screen uses two-column pills, not CheckBox rows");
 requireAll(main, [
-  'private String previousScreen = "home"',
-  'if ("article".equals(screen))',
-  'showScreen(previousScreen == null ? "home" : previousScreen)',
-  'showScreen("more")',
-  'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()',
+  'private static final long BACK_EXIT_WINDOW_MS = 2500L',
+  'private long lastBackPressAt = 0L',
   'public void onBackPressed()',
   'private void handleBackNavigation()',
+  'if (!"home".equals(screen))',
+  'showScreen("home")',
+  'lastBackPressAt = now',
+  'now - lastBackPressAt <= BACK_EXIT_WINDOW_MS',
+  'setMessage("Uygulamadan çıkmak istiyor musunuz?")',
+  'setNegativeButton("Vazgeç", null)',
+  'setPositiveButton("Çık", (dialog, which) -> finishAndRemoveTask())',
   'getOnBackInvokedDispatcher().registerOnBackInvokedCallback',
   'android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT',
   'this::handleBackNavigation'
-], "Golden back-navigation and Android 13+ callback contract");
+], "BilgiliMedia double-back exit contract");
 
 if (main.includes('pendingArticleId = extractArticleId(getIntent());\n        requestNotificationPermissionIfNeeded();')) {
   throw new Error("Notification permission must not be requested automatically on app startup");
