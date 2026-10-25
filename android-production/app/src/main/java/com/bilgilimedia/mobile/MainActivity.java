@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
     private static final int REQ_NOTIFICATION = 901;
     private static final long BACK_EXIT_WINDOW_MS = 2500L;
     private static final String WEB = "https://spoo.me/bilgilimedia";
+    private static final String APP_LINK = "https://bilgilimedia-60d6f.web.app/app";
     private static final String PRIVACY = "https://bilgilimedia-60d6f.web.app/privacy/";
     private static final String EMAIL = "sukrubatuhanbilgili@gmail.com";
 
@@ -111,6 +112,11 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        if (isAppHomeLink(intent)) {
+            pendingArticleId = "";
+            showScreen("home");
+            return;
+        }
         pendingArticleId = extractArticleId(intent);
         openPendingArticle();
     }
@@ -1212,6 +1218,14 @@ public class MainActivity extends Activity {
     }
 
     private void openPendingArticle(){if(pendingArticleId==null||pendingArticleId.isEmpty()||articles.isEmpty())return;Models.Article a=findArticle(pendingArticleId);if(a!=null){pendingArticleId="";openArticle(a);}}
+    private boolean isAppHomeLink(Intent intent){
+        if(intent==null||intent.getData()==null)return false;
+        Uri data=intent.getData();
+        return "https".equalsIgnoreCase(data.getScheme())
+                && "bilgilimedia-60d6f.web.app".equalsIgnoreCase(data.getHost())
+                && "/app".equals(data.getPath());
+    }
+
     private String extractArticleId(Intent intent){if(intent==null)return "";String id=intent.getStringExtra("open_article_id");if(id!=null&&!id.isEmpty())return id;Uri data=intent.getData();if(data!=null&&"https".equalsIgnoreCase(data.getScheme())&&"bilgilimedia-60d6f.web.app".equalsIgnoreCase(data.getHost())){List<String>s=data.getPathSegments();if(s.size()>=2&&"content".equals(s.get(0)))return s.get(1);}return "";}
 
     private void addHistory(String id){List<String> ids=historyIds();ids.remove(id);ids.add(0,id);while(ids.size()>100)ids.remove(ids.size()-1);prefs.edit().putString("history_all",TextUtils.join("|",ids)).putLong("history_time_"+id,System.currentTimeMillis()).apply();}
@@ -1251,7 +1265,7 @@ public class MainActivity extends Activity {
     private Set<String> getNotifyCategories(){return new LinkedHashSet<>(prefs.getStringSet("notify_categories",new HashSet<>()));}
 
     private void shareArticle(Models.Article a){String url=DataRepository.HOST_BASE+"/content/"+Uri.encode(a.id)+"?v="+feedVersion;Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,a.title);i.putExtra(Intent.EXTRA_TEXT,a.title+"\n"+url);startActivity(Intent.createChooser(i,"İçeriği paylaş"));}
-    private void shareApp(){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\n"+WEB);startActivity(Intent.createChooser(i,"Uygulamayı paylaş"));}
+    private void shareApp(){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,"BilgiliMedia");i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\n"+APP_LINK);startActivity(Intent.createChooser(i,"Uygulamayı paylaş"));}
     private void email(){try{startActivity(new Intent(Intent.ACTION_SENDTO,Uri.parse("mailto:"+EMAIL)));}catch(Exception e){Toast.makeText(this,"E-posta uygulaması açılamadı",Toast.LENGTH_SHORT).show();}}
 
     private void openSocial(Models.SocialAccount a){
