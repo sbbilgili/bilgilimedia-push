@@ -260,6 +260,36 @@ if (!firebase?.hosting?.public || !Array.isArray(firebase?.hosting?.headers)) {
   throw new Error("firebase.json hosting configuration is incomplete");
 }
 
+const appRedirect = Array.isArray(firebase.hosting.redirects)
+  ? firebase.hosting.redirects.find((rule) => rule?.source === "/app")
+  : null;
+if (!appRedirect ||
+    appRedirect.destination !== "https://spoo.me/bilgilimedia" ||
+    appRedirect.type !== 302) {
+  throw new Error("/app must fall back to the BilgiliMedia web page when the Android app is not installed");
+}
+
+const openRewrite = Array.isArray(firebase.hosting.rewrites)
+  ? firebase.hosting.rewrites.find((rule) => rule?.source === "/open/**")
+  : null;
+if (!openRewrite || openRewrite.destination !== "/open/index.html") {
+  throw new Error("/open/** must route to the app-first launcher page");
+}
+
+const openScript = fs.readFileSync("hosting/assets/open.js", "utf8");
+for (const required of [
+  "com.bilgilimedia.mobile.qa",
+  "com.bilgilimedia.mobile",
+  "intent://",
+  "browser_fallback_url",
+  "/content/",
+  "https://spoo.me/bilgilimedia",
+]) {
+  if (!openScript.includes(required)) {
+    throw new Error("App-first launcher is missing: " + required);
+  }
+}
+
 const globalHeaderRule = firebase.hosting.headers.find((rule) => rule.source === "**");
 const cspHeader = globalHeaderRule?.headers?.find(
   (header) => String(header.key).toLowerCase() === "content-security-policy"
@@ -273,6 +303,8 @@ if (String(cspHeader.value).includes("'unsafe-inline'")) {
 for (const file of [
   "hosting/assets/site.css",
   "hosting/assets/content.js",
+  "hosting/assets/open.js",
+  "hosting/open/index.html",
 ]) {
   if (!fs.existsSync(file)) throw new Error("Missing hosting asset: " + file);
 }
