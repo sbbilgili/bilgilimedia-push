@@ -1,0 +1,97 @@
+name: Build Android Production Candidate
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "android-production/**"
+      - "content/feed.json"
+      - "hosting/app-config.json"
+      - "scripts/validate-android-source.js"
+      - "scripts/audit-android-artifacts.sh"
+      - "FINAL_ANDROID_ACCEPTANCE.md"
+      - ".github/workflows/android-production-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Android release gate
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate repository content/config
+        run: node scripts/validate-content.js
+
+      - name: Validate recovered Android source contract
+        run: node scripts/validate-android-source.js
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -type f -path "*/bin/sdkmanager" | sort -V | tail -1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Prepare offline content fallback
+        shell: bash
+        run: |
+          mkdir -p android-production/app/src/main/assets
+          cp content/feed.json android-production/app/src/main/assets/feed.json
+          cp hosting/app-config.json android-production/app/src/main/assets/app-config.json
+
+      - name: Android lint
+        working-directory: android-production
+        run: gradle --no-daemon --warning-mode=all :app:lintRelease
+
+      - name: Build QA APK, release APK and production AAB
+        working-directory: android-production
+        run: gradle --no-daemon --warning-mode=all :app:assembleDebug :app:assembleRelease :app:bundleRelease
+
+      - name: Record QA signing certificate
+        working-directory: android-production
+        shell: bash
+        run: |
+          mkdir -p app/build/reports
+          gradle --no-daemon :app:signingReport | tee app/build/reports/signing-report.txt
+
+      - name: Audit production artifacts
+        shell: bash
+        run: |
+          chmod +x scripts/audit-android-artifacts.sh
+          scripts/audit-android-artifacts.sh
+
+      - name: Upload Android candidate artifacts and reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: BilgiliMedia-Android-1.4.9-hardened-candidate
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            android-production/app/build/outputs/apk/debug/app-debug.apk
+            android-production/app/build/outputs/apk/release/app-release-unsigned.apk
+            android-production/app/build/outputs/bundle/release/app-release.aab
+            android-production/app/build/reports/lint-results-release.html
+            android-production/app/build/reports/signing-report.txt
+            android-production/app/build/reports/release-audit/summary.txt
