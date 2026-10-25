@@ -1,6 +1,18 @@
 name: Build Android Production Candidate
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "android-production/**"
+      - "content/feed.json"
+      - "hosting/app-config.json"
+      - "scripts/validate-android-source.js"
+      - "scripts/audit-android-artifacts.sh"
+      - "ANDROID_UI_LOCK_1_4_9.md"
+      - "FINAL_ANDROID_ACCEPTANCE.md"
+      - ".github/workflows/android-production-build.yml"
   pull_request:
     branches:
       - main
@@ -10,6 +22,7 @@ on:
       - "hosting/app-config.json"
       - "scripts/validate-android-source.js"
       - "scripts/audit-android-artifacts.sh"
+      - "ANDROID_UI_LOCK_1_4_9.md"
       - "FINAL_ANDROID_ACCEPTANCE.md"
       - ".github/workflows/android-production-build.yml"
   workflow_dispatch:
