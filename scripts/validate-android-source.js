@@ -178,8 +178,22 @@ requireAll(main, [
   'if ("article".equals(screen))',
   'showScreen(previousScreen == null ? "home" : previousScreen)',
   'showScreen("more")',
-  'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()'
+  'Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show()',
+  'getOnBackInvokedDispatcher().registerOnBackInvokedCallback',
+  'this::handleBackNavigation',
+  'private void handleBackNavigation()'
 ], "Golden back-navigation contract");
+
+if (main.includes('pendingArticleId = extractArticleId(getIntent());\n        requestNotificationPermissionIfNeeded();')) {
+  throw new Error("Notification permission must not be requested automatically on app startup");
+}
+
+requireAll(main, [
+  'NotificationSync.selectedCategoryIds(this, config)',
+  'NotificationSync.setCategorySelected(',
+  'if (!master) markCurrentContentKnown()',
+  'if(ok)markCurrentContentKnown()'
+], "Hardened notification preference contract");
 requireAll(main, [
   'typeLabel.setPadding(0, dp(12), 0, 0)',
   'sortLabel.setPadding(0, dp(5), 0, 0)',
