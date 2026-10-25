@@ -21,12 +21,15 @@ Bu dosya, kimlik belgesi ulaştığında Play Console'da işlemlerin hangi sıra
 
 1. Developer identity / Payments profile doğrulaması.
 2. Package name registration durumunu kontrol et.
+   - `com.bilgilimedia.mobile` daha önce Play dışında kullanıldığı için sahiplik kanıtı istenirse `PLAY_SIGNING_AND_PACKAGE_REGISTRATION.md` prosedürünü uygula.
+   - Mevcut production sertifika fingerprintini kullan; farklı bir key ile package ownership kanıtlamaya çalışma.
 3. Create app:
    - App name: BilgiliMedia
    - Default language: Turkish
    - App
    - Free (mevcut plan)
 4. App signing:
+   - `PLAY_SIGNING_AND_PACKAGE_REGISTRATION.md` rehberini takip et,
    - mevcut production app-signing key sürekliliğini koru,
    - upload key ile app-signing key'i ayır,
    - Play App Signing certificate SHA-256 değer(ler)ini kaydet.
