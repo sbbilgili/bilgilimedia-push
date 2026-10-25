@@ -53,8 +53,8 @@ requireAll(main, [
   'tv("▶", 18, Color.WHITE, true)',
   'new LinearLayout.LayoutParams(dp(42), dp(42))',
   'tv("BilgiliMedia", 21, text(), true)',
-  'play.setTranslationY(dp(6))',
-  'brandBox.setTranslationY(dp(6))',
+  'play.setTranslationY(dp(9))',
+  'brandBox.setTranslationY(dp(9))',
   'tv("Bilgi • Keşif • Medya", 11, secondary(), false)',
   'tv("↗", 24, text(), true)',
   'new LinearLayout.LayoutParams(dp(44), dp(44))',
@@ -217,6 +217,18 @@ if ((main.match(/renderNotifications\(\);/g) || []).length !== 1) {
   throw new Error("renderNotifications() must only be called from the screen router; interactive updates must use showScreen(\"notifications\")");
 }
 if (main.includes("new CheckBox(this)")) throw new Error("Golden notification screen uses two-column pills, not CheckBox rows");
+if (main.includes("Teknik Firebase işlemleri arka planda otomatik yönetilir.")) {
+  throw new Error("Technical Firebase copy must not be shown in the user-facing notification screen");
+}
+requireAll(main, [
+  'private void renderAccounts()',
+  'content.removeAllViews();',
+  'new String[]{"Tümü","Instagram","YouTube","TikTok","Facebook"}',
+  'accountPlatformFilter=(String)v;showScreen("accounts")'
+], "Accounts platform switching contract");
+if (main.includes('accountPlatformFilter=(String)v;renderAccounts()')) {
+  throw new Error("Accounts platform changes must redraw through showScreen(\"accounts\")");
+}
 requireAll(main, [
   'private static final long BACK_EXIT_WINDOW_MS = 2500L',
   'private long lastBackPressAt = 0L',
