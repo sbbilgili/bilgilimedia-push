@@ -9,7 +9,7 @@ public final class BilgiliFirebaseMessagingService extends FirebaseMessagingServ
     @Override public void onMessageReceived(RemoteMessage message){
         super.onMessageReceived(message);SharedPreferences p=getSharedPreferences(DataRepository.PREFS,MODE_PRIVATE);if(!p.getBoolean("notify_master",false))return;
         Map<String,String>d=message.getData();String id=v(d.get("article_id")),category=v(d.get("category")),title=v(d.get("title")),body=v(d.get("body"));if(category.isEmpty())category="Genel";
-        Set<String>selected=new HashSet<>(p.getStringSet("notify_categories",new HashSet<>()));if(selected.isEmpty()||!selected.contains(category))return;
+        Set<String>selected=new HashSet<>(p.getStringSet("notify_categories",new HashSet<>()));if(!selected.isEmpty()&&!selected.contains(category))return;
         Set<String>notified=new HashSet<>(p.getStringSet("notified_content_ids",new HashSet<>()));if(!id.isEmpty()&&notified.contains(id))return;
         if(!id.isEmpty()){notified.add(id);Set<String>known=new HashSet<>(p.getStringSet("known_content_ids",new HashSet<>()));known.add(id);p.edit().putStringSet("notified_content_ids",notified).putStringSet("known_content_ids",known).apply();}
         if(title.isEmpty())title="Yeni BilgiliMedia içeriği";if(body.isEmpty())body="Yeni içerik yayımlandı.";NotificationHelper.show(this,id,category,title,body);
