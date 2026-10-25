@@ -8,7 +8,7 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 - [x] Referans SHA-256: `dca81609a1df783de5606ee646af4bd672121aed0188a84886db1c0652ccae76`.
 - [x] Preview paket: `com.bilgilimedia.mobile.media.preview`.
 - [x] Preview imza sertifikası App Links kaydıyla eşleşiyor.
-- [ ] Orijinal arayüzün yeniden üretilebilir native kaynak projesi kurtarıldı/yeniden oluşturuldu.
+- [x] Yeniden üretilebilir production Android kaynak projesi `final-android-hardening` / PR #23 altında oluşturuldu; final UI cihaz onayı bekleniyor.
 - [ ] Final Play build'i bu altın referansla görsel ve işlevsel regresyon testinden geçti.
 
 ## 2. Android build / Play AAB
@@ -17,20 +17,21 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 - [x] Production sürüm politikası: final AAB versionCode `23` veya daha yüksek olacak.
 - [x] Referans hedef: API 36; 31 Ağustos 2026 itibarıyla yeni Play uygulamaları için minimum gereklilik API 36.
 - [x] minSdk: API 26 kararı korunuyor.
-- [ ] Google Play için **AAB** üretildi; APK yalnız cihaz QA'sı için kullanılıyor.
+- [x] CI, production package `com.bilgilimedia.mobile` için yeniden üretilebilir release AAB üretiyor; Play'e yüklenecek final imzalı AAB henüz oluşturulmadı.
 - [ ] Release AAB üretim/upload anahtarıyla imzalandı.
 - [x] Referans APK'da gereksiz hassas izin bulunmuyor.
 - [x] Referans APK'da cleartext HTTP kapalı ve `allowBackup=false`.
 - [x] Referans APK v2 + v3 APK signature block içeriyor.
 - [x] Referans APK'daki native `.so` kütüphaneleri 16 KB ELF hizasına sahip.
 - [x] Referans APK'da uncompressed native kütüphaneler ZIP içinde 16 KB hizalı.
-- [ ] Final AAB/Play-generated APK seti 16 KB page-size kontrolünden geçti.
+- [x] CI release candidate APK/AAB için 16 KB packaging/alignment artifact audit çalışıyor ve geçiyor.
+- [ ] Play-generated split APK seti 16 KB page-size ortamında ayrıca doğrulandı.
 - [ ] Final AAB bundletool/Play Console pre-launch raporu ile doğrulandı.
 
 ## 3. Firebase / bildirim
 
 - [x] Firebase Console'da production paket `com.bilgilimedia.mobile` Android uygulaması kayıtlı.
-- [x] Production `google-services.json` Firebase Console'dan indirildi ve production paket kaydı doğrulandı.\n- [ ] Production `google-services.json` final kaynak projeye entegre edildi; preview dosyası production build'de kullanılmıyor.
+- [x] Production `google-services.json` Firebase Console'dan indirildi ve production paket kaydı doğrulandı.\n- [x] Production Firebase client kimliği final kaynakta production `BuildConfig` değerleriyle entegre; preview client production build yolunda kullanılmıyor.
 - [x] Backend FCM gönderimi OIDC/WIF ile anahtarsız çalışıyor.
 - [x] FCM erişimi dry-run ile doğrulanıyor.
 - [ ] Android 13+ bildirim izni gerçek cihazda test edildi.
@@ -44,7 +45,8 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 - [x] `assetlinks.json` production paket `com.bilgilimedia.mobile` için mevcut production sertifikasıyla kayıt içeriyor.
 - [ ] Production SHA-256 değeri Play Console > App integrity > **App signing certificate** ile birebir eşleşiyor.
 - [ ] Play App Signing birden fazla dağıtım sertifikası gösteriyorsa gerekli tüm fingerprint'ler API sağlayıcılarında ve assetlinks'te kaydedildi.
-- [ ] App Link ile içerik açma ve tarayıcı fallback gerçek cihazda test edildi.
+- [x] QA üzerinde app-first içerik paylaşımı ve web fallback gerçek cihazda doğrulandı.
+- [ ] Final Play-signed production build üzerinde doğrulanmış App Link doğrudan açılışı test edildi.
 
 ## 5. İmza ve güncelleme sürekliliği
 
@@ -100,11 +102,13 @@ Bu dosya 1.4.8 referans build'i ve sonraki üretim adayları için yayın önces
 - [ ] Android 16 / API 36 cihaz veya emülatör testi.
 - [ ] 16 KB page-size ortamında test.
 - [ ] Wi-Fi / mobil ağ / bağlantısız / yavaş ağ senaryoları.
-- [ ] Geri tuşu, yeniden açma ve ekran döndürme.
+- [x] Geri tuşu / çift geri çıkış davranışı QA cihazında doğrulandı.
+- [ ] Yeniden açma ve ekran döndürme.
 - [ ] Büyük yazı boyutu ve erişilebilirlik.
 - [ ] Favoriler, son okunanlar, tema ve bildirim tercihlerinin güncellemede korunması.
-- [ ] Sosyal bağlantı uygulama varsa app'e, yoksa HTTPS fallback'e gidiyor.
-- [ ] App Links doğru içeriği açıyor.
+- [ ] Sosyal bağlantı uygulama varsa app'e, yoksa HTTPS fallback'e final QA turunda doğrulandı.
+- [x] QA app-first paylaşım bağlantısı doğru içeriği uygulamada açıyor; uygulama yoksa web fallback çalışıyor.
+- [ ] Final Play-signed production App Links doğrulaması tamamlandı.
 - [ ] AI/HIGGS ve yeni uzaktan kategoriler menü/bildirim tarafında doğrulanıyor.
 
 ## 10. Altyapı güvenliği
