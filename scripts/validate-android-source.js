@@ -65,12 +65,12 @@ requireAll(app, [
 
 requireAll(main, [
   'header.setPadding(dp(16), dp(9), dp(12), dp(16))',
-  'tv("▶", 18, Color.WHITE, true)',
-  'new LinearLayout.LayoutParams(dp(42), dp(42))',
+  'tv("▶", 17, Color.WHITE, true)',
+  'new LinearLayout.LayoutParams(dp(38), dp(38))',
   'tv("BilgiliMedia", 21, text(), true)',
   'play.setTranslationY(dp(10))',
   'brandBox.setTranslationY(dp(10))',
-  'tv("Bilgi • Keşif • Medya", 11, secondary(), false)',
+  'tv("İçerikler • Medya", 11, secondary(), false)',
   'tv("↗", 24, text(), true)',
   'new LinearLayout.LayoutParams(dp(44), dp(44))',
 
