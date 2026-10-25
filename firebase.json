@@ -79,6 +79,13 @@
           }
         ]
       }
+    ],
+    "redirects": [
+      {
+        "source": "/app",
+        "destination": "https://spoo.me/bilgilimedia",
+        "type": 302
+      }
     ]
   }
 }
