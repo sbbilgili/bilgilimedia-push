@@ -64,6 +64,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
     private static final int REQ_NOTIFICATION = 901;
+    private static final long BACK_EXIT_WINDOW_MS = 2500L;
     private static final String WEB = "https://spoo.me/bilgilimedia";
     private static final String PRIVACY = "https://bilgilimedia-60d6f.web.app/privacy/";
     private static final String EMAIL = "sukrubatuhanbilgili@gmail.com";
@@ -89,6 +90,7 @@ public class MainActivity extends Activity {
     private String featuredId = "";
     private boolean dark = false;
     private boolean loading = false;
+    private long lastBackPressAt = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,20 +121,28 @@ public class MainActivity extends Activity {
     }
 
     private void handleBackNavigation() {
-        if ("article".equals(screen)) {
-            showScreen(previousScreen == null ? "home" : previousScreen);
-            return;
-        }
-        if ("history".equals(screen) || "notifications".equals(screen) || "settings".equals(screen)
-                || "privacy".equals(screen) || "about".equals(screen) || "developer".equals(screen)) {
-            showScreen("more");
-            return;
-        }
+        long now = android.os.SystemClock.elapsedRealtime();
+
         if (!"home".equals(screen)) {
             showScreen("home");
+            lastBackPressAt = now;
+            Toast.makeText(this, "Ana sayfa • çıkmak için tekrar geri tuşuna bas", Toast.LENGTH_SHORT).show();
             return;
         }
-        Toast.makeText(this, "Ana sayfadasın", Toast.LENGTH_SHORT).show();
+
+        if (now - lastBackPressAt <= BACK_EXIT_WINDOW_MS) {
+            lastBackPressAt = 0L;
+            new AlertDialog.Builder(this)
+                    .setTitle("BilgiliMedia")
+                    .setMessage("Uygulamadan çıkmak istiyor musunuz?")
+                    .setNegativeButton("Vazgeç", null)
+                    .setPositiveButton("Çık", (dialog, which) -> finishAndRemoveTask())
+                    .show();
+            return;
+        }
+
+        lastBackPressAt = now;
+        Toast.makeText(this, "Çıkmak için tekrar geri tuşuna bas", Toast.LENGTH_SHORT).show();
     }
 
     private void buildShell() {
@@ -791,6 +801,7 @@ public class MainActivity extends Activity {
     }
 
     private void renderNotifications(){
+        content.removeAllViews();
         renderHeader(false);
         content.addView(tv("Bildirimler",27,text(),true));
         content.addView(tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç. Teknik Firebase işlemleri arka planda otomatik yönetilir.",14,secondary(),false));
@@ -801,7 +812,7 @@ public class MainActivity extends Activity {
             if (master) {
                 prefs.edit().putBoolean("notify_master", false).apply();
                 syncNotifications(false);
-                renderNotifications();
+                showScreen("notifications");
                 return;
             }
             if (Build.VERSION.SDK_INT >= 33 && !notificationsAllowed()) {
@@ -811,7 +822,7 @@ public class MainActivity extends Activity {
             prefs.edit().putBoolean("notify_master", true).apply();
             syncNotifications(true);
             Toast.makeText(this, "Bildirimler etkin", Toast.LENGTH_SHORT).show();
-            renderNotifications();
+            showScreen("notifications");
         }));
 
         sectionTitle("Kategoriler","İstediğin kategorileri açıp kapatabilirsin");
@@ -841,7 +852,7 @@ public class MainActivity extends Activity {
                         .putStringSet("notify_categories", new HashSet<>(next))
                         .apply();
                 syncNotifications(true);
-                renderNotifications();
+                showScreen("notifications");
             });
 
             LinearLayout.LayoutParams lp =
