@@ -260,6 +260,15 @@ if (!firebase?.hosting?.public || !Array.isArray(firebase?.hosting?.headers)) {
   throw new Error("firebase.json hosting configuration is incomplete");
 }
 
+const appRedirect = Array.isArray(firebase.hosting.redirects)
+  ? firebase.hosting.redirects.find((rule) => rule?.source === "/app")
+  : null;
+if (!appRedirect ||
+    appRedirect.destination !== "https://spoo.me/bilgilimedia" ||
+    appRedirect.type !== 302) {
+  throw new Error("/app must fall back to the BilgiliMedia web page when the Android app is not installed");
+}
+
 const globalHeaderRule = firebase.hosting.headers.find((rule) => rule.source === "**");
 const cspHeader = globalHeaderRule?.headers?.find(
   (header) => String(header.key).toLowerCase() === "content-security-policy"
