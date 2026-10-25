@@ -40,6 +40,7 @@ import android.widget.Toast;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -96,6 +97,11 @@ public class MainActivity extends Activity {
         applyThemeMode();
         buildShell();
         pendingArticleId = extractArticleId(getIntent());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    this::handleBackNavigation);
+        }
         load(false);
     }
 
@@ -794,7 +800,7 @@ public class MainActivity extends Activity {
         content.addView(menuCard("▣ Bildirim durumu", enabled ? "Açık" : "Kapalı", () -> {
             if (master) {
                 prefs.edit().putBoolean("notify_master", false).apply();
-                NotificationSync.sync(this, config);
+                syncNotifications(false);
                 renderNotifications();
                 return;
             }
@@ -803,17 +809,14 @@ public class MainActivity extends Activity {
                 return;
             }
             prefs.edit().putBoolean("notify_master", true).apply();
-            NotificationSync.sync(this, config);
+            syncNotifications(true);
             Toast.makeText(this, "Bildirimler etkin", Toast.LENGTH_SHORT).show();
             renderNotifications();
         }));
 
         sectionTitle("Kategoriler","İstediğin kategorileri açıp kapatabilirsin");
 
-        LinkedHashSet<String> names = new LinkedHashSet<>();
-        for (Models.Category category : config.categories) {
-            if (category.name != null && !category.name.isEmpty()) names.add(category.name);
-        }
+        LinkedHashSet<String> names = availableNotificationCategoryNames();
         Set<String> selected = getNotifyCategories();
 
         LinearLayout grid = new LinearLayout(this);
@@ -837,7 +840,7 @@ public class MainActivity extends Activity {
                 prefs.edit()
                         .putStringSet("notify_categories", new HashSet<>(next))
                         .apply();
-                NotificationSync.sync(this, config);
+                syncNotifications(true);
                 renderNotifications();
             });
 
@@ -859,6 +862,44 @@ public class MainActivity extends Activity {
         content.addView(tv(
                 "Yeni kategoriler eklendiğinde bildirim seçenekleri otomatik güncellenir.",
                 12,secondary(),false));
+    }
+
+    private LinkedHashSet<String> availableNotificationCategoryNames() {
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        String raw = prefs.getString("app_config_cache", "");
+        if (raw != null && !raw.trim().isEmpty()) {
+            try {
+                JSONObject root = new JSONObject(raw);
+                JSONArray categories = root.optJSONArray("categories");
+                if (categories != null) {
+                    for (int i = 0; i < categories.length(); i++) {
+                        JSONObject item = categories.optJSONObject(i);
+                        if (item == null || !item.optBoolean("enabled", true)) continue;
+                        String name = item.optString("name", "").trim();
+                        if (!name.isEmpty()) names.add(name);
+                    }
+                }
+            } catch (Exception ignored) {
+                // Golden client falls back to categories visible in the live article list.
+            }
+        }
+        if (names.isEmpty()) {
+            for (Models.Article article : articles) {
+                if (article.category == null) continue;
+                String name = article.category.trim();
+                if (!name.isEmpty()) names.add(name);
+            }
+        }
+        return names;
+    }
+
+    private void syncNotifications(boolean showFeedback) {
+        NotificationSync.sync(this, config);
+        if (showFeedback
+                && prefs.getBoolean("notify_master", false)
+                && getNotifyCategories().isEmpty()) {
+            Toast.makeText(this, "Seçili kategori yok", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void renderSettings(){
@@ -883,7 +924,7 @@ public class MainActivity extends Activity {
         content.addView(themeRow);
 
         sectionTitle("Bildirimler","Kategori bazlı bildirim tercihleri");
-        content.addView(menuCard("▣ Bildirim ayarları", notificationsAllowed() && prefs.getBoolean("notify_master",true) ? "Açık" : "Kapalı", () -> showScreen("notifications")));
+        content.addView(menuCard("▣ Bildirim ayarları", notificationsAllowed() && prefs.getBoolean("notify_master",false) ? "Açık" : "Kapalı", () -> showScreen("notifications")));
 
         sectionTitle("Yerel veriler","Bu cihazda saklanan kişisel kullanım verileri");
         content.addView(tv("Kaydedilenler: " + getStringSet("saved").size() + " • Okuma geçmişi: " + historyIds().size() + " kayıt",14,secondary(),false));
@@ -1210,7 +1251,7 @@ public class MainActivity extends Activity {
     private String host(String url){try{String h=Uri.parse(url).getHost();if(h==null)return "";return h.startsWith("www.")?h.substring(4):h;}catch(Exception e){return "";}}
 
     private void requestNotificationPermissionIfNeeded(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIFICATION);}
-    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_NOTIFICATION){boolean ok=grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED;prefs.edit().putBoolean("notify_master",ok).apply();if(ok)NotificationSync.sync(this,config);Toast.makeText(this,ok?"Bildirim izni verildi":"Bildirim izni verilmedi",Toast.LENGTH_SHORT).show();showScreen("notifications");}}
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_NOTIFICATION){boolean ok=grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED;prefs.edit().putBoolean("notify_master",ok).apply();if(ok)syncNotifications(true);Toast.makeText(this,ok?"Bildirim izni verildi":"Bildirim izni verilmedi",Toast.LENGTH_SHORT).show();showScreen("notifications");}}
     private boolean notificationsAllowed(){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)return false;android.app.NotificationManager nm=(android.app.NotificationManager)getSystemService(NOTIFICATION_SERVICE);return nm==null||Build.VERSION.SDK_INT<24||nm.areNotificationsEnabled();}
 
     private void clearLocalData(){prefs.edit().remove("saved").remove("history_all").remove("recent").remove("theme").remove("content_cache").remove("app_config_cache").apply();File f=new File(getFilesDir(),"feed-cache.json");if(f.exists())f.delete();File c=new File(getFilesDir(),"config-cache.json");if(c.exists())c.delete();Toast.makeText(this,"Yerel kayıtlar temizlendi",Toast.LENGTH_SHORT).show();recreate();}
