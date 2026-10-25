@@ -28,7 +28,7 @@ final class NotificationSync {
     private NotificationSync() {}
 
     static void sync(Context context, AppConfig config) {
-        if (context == null || config == null) return;
+        if (context == null) return;
 
         SharedPreferences prefs =
                 context.getSharedPreferences(DataRepository.PREFS, Context.MODE_PRIVATE);
@@ -36,11 +36,21 @@ final class NotificationSync {
         Set<String> selectedNames = new LinkedHashSet<>(
                 prefs.getStringSet("notify_categories", new HashSet<>()));
 
+        JSONObject topicMap;
+        try {
+            topicMap = new JSONObject(prefs.getString("category_topic_map", "{}"));
+        } catch (Exception ignored) {
+            topicMap = new JSONObject();
+        }
+
         Set<String> desired = new LinkedHashSet<>();
-        if (master && !selectedNames.isEmpty()) {
-            for (Models.Category category : config.categories) {
-                if (category.topic == null || category.topic.isEmpty()) continue;
-                if (selectedNames.contains(category.name)) desired.add(category.topic);
+        if (master) {
+            for (String name : selectedNames) {
+                if (name == null || name.trim().isEmpty()) continue;
+                String cleanName = name.trim();
+                String topic = topicMap.optString(cleanName, "").trim();
+                if (topic.isEmpty()) topic = AppConfig.slug(cleanName);
+                if (!topic.isEmpty()) desired.add(topic);
             }
         }
 
