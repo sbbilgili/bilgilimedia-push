@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
     private static final int REQ_NOTIFICATION = 901;
     private static final long BACK_EXIT_WINDOW_MS = 2500L;
     private static final String WEB = "https://spoo.me/bilgilimedia";
-    private static final String APP_LINK = "https://bilgilimedia-60d6f.web.app/app";
+    private static final String APP_OPEN_LINK = "https://bilgilimedia-60d6f.web.app/open/app";
     private static final String PRIVACY = "https://bilgilimedia-60d6f.web.app/privacy/";
     private static final String EMAIL = "sukrubatuhanbilgili@gmail.com";
 
@@ -165,13 +165,13 @@ public class MainActivity extends Activity {
         TextView play = tv("▶", 18, Color.WHITE, true);
         play.setGravity(Gravity.CENTER);
         play.setBackground(round(brand(), 16));
-        play.setTranslationY(dp(3));
+        play.setTranslationY(dp(6));
         header.addView(play, new LinearLayout.LayoutParams(dp(42), dp(42)));
 
         LinearLayout brandBox = new LinearLayout(this);
         brandBox.setOrientation(LinearLayout.VERTICAL);
         brandBox.setPadding(dp(10), 0, 0, 0);
-        brandBox.setTranslationY(dp(3));
+        brandBox.setTranslationY(dp(6));
         brandBox.addView(tv("BilgiliMedia", 21, text(), true));
         brandBox.addView(tv("Bilgi • Keşif • Medya", 11, secondary(), false));
         header.addView(brandBox, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -324,6 +324,8 @@ public class MainActivity extends Activity {
 
     private void renderHome() {
         renderHeader(true);
+        renderQuickAccess();
+
         content.addView(tv("Bugün ne keşfetmek istersin?", 28, text(), true));
         TextView sub = tv("Güncel kısa okumalar, popüler içerikler ve tüm BilgiliMedia hesapları tek uygulamada.", 14, secondary(), false);
         sub.setPadding(0, 4, 0, dp(8));
@@ -380,18 +382,40 @@ public class MainActivity extends Activity {
                 content.addView(horizontalArticles(limit(cat, 6)));
             }
         }
+    }
 
-        sectionTitle("Hızlı Erişim", "Sosyal hesaplarımız");
+    private void renderQuickAccess() {
+        LinearLayout heading = new LinearLayout(this);
+        heading.setOrientation(LinearLayout.HORIZONTAL);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        heading.setPadding(0, dp(12), 0, 0);
+
+        TextView quick = tv("Hızlı Erişim", 20, text(), true);
+        heading.addView(quick);
+
+        TextView channels = tv("İçerik Kanallarımız", 13, secondary(), true);
+        LinearLayout.LayoutParams channelLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        channelLp.setMargins(dp(10), dp(2), 0, 0);
+        heading.addView(channels, channelLp);
+        content.addView(heading);
+
         LinearLayout platforms = new LinearLayout(this);
         for (String platform : new String[]{"Instagram","YouTube","TikTok","Facebook"}) {
             TextView chip = pill(platform, false);
             chip.setOnClickListener(v -> { accountPlatformFilter = platform; showScreen("accounts"); });
             platforms.addView(chip);
         }
+
         HorizontalScrollView ps = new HorizontalScrollView(this);
         ps.setHorizontalScrollBarEnabled(false);
         ps.addView(platforms);
-        content.addView(ps);
+        LinearLayout.LayoutParams accessLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        accessLp.setMargins(0, 0, 0, dp(8));
+        content.addView(ps, accessLp);
     }
 
     private View categoryRail(boolean compact) {
@@ -1264,8 +1288,15 @@ public class MainActivity extends Activity {
     private int countSavedArticles(){int n=0;for(Models.Article a:articles)if(isSavedArticle(a.id))n++;return n;}
     private Set<String> getNotifyCategories(){return new LinkedHashSet<>(prefs.getStringSet("notify_categories",new HashSet<>()));}
 
-    private void shareArticle(Models.Article a){String url=DataRepository.HOST_BASE+"/content/"+Uri.encode(a.id)+"?v="+feedVersion;Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,a.title);i.putExtra(Intent.EXTRA_TEXT,a.title+"\n"+url);startActivity(Intent.createChooser(i,"İçeriği paylaş"));}
-    private void shareApp(){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,"BilgiliMedia");i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\n"+APP_LINK);startActivity(Intent.createChooser(i,"Uygulamayı paylaş"));}
+    private String sharedContentLink(Models.Article a){
+        String url = DataRepository.HOST_BASE + "/open/content/" + Uri.encode(a.id) + "?v=" + feedVersion;
+        return BuildConfig.DEBUG ? url + "&qa=1" : url;
+    }
+    private String sharedAppLink(){
+        return BuildConfig.DEBUG ? APP_OPEN_LINK + "?qa=1" : APP_OPEN_LINK;
+    }
+    private void shareArticle(Models.Article a){String url=sharedContentLink(a);Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,a.title);i.putExtra(Intent.EXTRA_TEXT,a.title+"\n"+url);startActivity(Intent.createChooser(i,"İçeriği paylaş"));}
+    private void shareApp(){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,"BilgiliMedia");i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\n"+sharedAppLink());startActivity(Intent.createChooser(i,"Uygulamayı paylaş"));}
     private void email(){try{startActivity(new Intent(Intent.ACTION_SENDTO,Uri.parse("mailto:"+EMAIL)));}catch(Exception e){Toast.makeText(this,"E-posta uygulaması açılamadı",Toast.LENGTH_SHORT).show();}}
 
     private void openSocial(Models.SocialAccount a){
