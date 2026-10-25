@@ -165,13 +165,13 @@ public class MainActivity extends Activity {
         TextView play = tv("▶", 18, Color.WHITE, true);
         play.setGravity(Gravity.CENTER);
         play.setBackground(round(brand(), 16));
-        play.setTranslationY(dp(9));
+        play.setTranslationY(dp(18));
         header.addView(play, new LinearLayout.LayoutParams(dp(42), dp(42)));
 
         LinearLayout brandBox = new LinearLayout(this);
         brandBox.setOrientation(LinearLayout.VERTICAL);
         brandBox.setPadding(dp(10), 0, 0, 0);
-        brandBox.setTranslationY(dp(9));
+        brandBox.setTranslationY(dp(18));
         brandBox.addView(tv("BilgiliMedia", 21, text(), true));
         brandBox.addView(tv("Bilgi • Keşif • Medya", 11, secondary(), false));
         header.addView(brandBox, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
