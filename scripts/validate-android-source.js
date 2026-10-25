@@ -53,8 +53,8 @@ requireAll(main, [
   'tv("▶", 18, Color.WHITE, true)',
   'new LinearLayout.LayoutParams(dp(42), dp(42))',
   'tv("BilgiliMedia", 21, text(), true)',
-  'play.setTranslationY(dp(3))',
-  'brandBox.setTranslationY(dp(3))',
+  'play.setTranslationY(dp(6))',
+  'brandBox.setTranslationY(dp(6))',
   'tv("Bilgi • Keşif • Medya", 11, secondary(), false)',
   'tv("↗", 24, text(), true)',
   'new LinearLayout.LayoutParams(dp(44), dp(44))',
@@ -74,6 +74,10 @@ requireAll(main, [
   'dp(76)',
 
   'tv("BİLGİLİMEDIA", 11, brand(), true)',
+  'private void renderQuickAccess()',
+  'tv("Hızlı Erişim", 20, text(), true)',
+  'tv("İçerik Kanallarımız", 13, secondary(), true)',
+  'renderQuickAccess();',
   'tv("Bugün ne keşfetmek istersin?", 28, text(), true)',
   'tv("Ara ve keşfet", 27, text(), true)',
   'new String[]{"Tümü","Yazı","Video","Favoriler"}',
@@ -151,8 +155,13 @@ requireAll(main, [
   '0xccd71920',
 
   '"?v="+feedVersion',
-  'private static final String APP_LINK = "https://bilgilimedia-60d6f.web.app/app"',
-  'i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\\n"+APP_LINK)',
+  'private static final String APP_OPEN_LINK = "https://bilgilimedia-60d6f.web.app/open/app"',
+  'private String sharedContentLink(Models.Article a)',
+  '"/open/content/" + Uri.encode(a.id)',
+  'BuildConfig.DEBUG ? url + "&qa=1" : url',
+  'private String sharedAppLink()',
+  'BuildConfig.DEBUG ? APP_OPEN_LINK + "?qa=1" : APP_OPEN_LINK',
+  'i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\\n"+sharedAppLink())',
   'private boolean isAppHomeLink(Intent intent)',
   '"/app".equals(data.getPath())',
   'showScreen("home")',
@@ -281,5 +290,8 @@ if (main.includes('prefs.getBoolean("notify_master",true)') ||
 }
 
 if (main.includes('i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\\n"+WEB)')) {
-  throw new Error("App share must use the verified /app App Link, not the external short URL directly");
+  throw new Error("App share must not expose the external short URL directly");
+}
+if (main.includes('DataRepository.HOST_BASE+"/content/"+Uri.encode(a.id)+"?v="+feedVersion')) {
+  throw new Error("Content sharing must use the app-first /open/content launcher URL");
 }
