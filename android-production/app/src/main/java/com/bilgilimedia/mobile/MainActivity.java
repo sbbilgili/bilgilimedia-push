@@ -165,13 +165,13 @@ public class MainActivity extends Activity {
         TextView play = tv("▶", 18, Color.WHITE, true);
         play.setGravity(Gravity.CENTER);
         play.setBackground(round(brand(), 16));
-        play.setTranslationY(dp(6));
+        play.setTranslationY(dp(9));
         header.addView(play, new LinearLayout.LayoutParams(dp(42), dp(42)));
 
         LinearLayout brandBox = new LinearLayout(this);
         brandBox.setOrientation(LinearLayout.VERTICAL);
         brandBox.setPadding(dp(10), 0, 0, 0);
-        brandBox.setTranslationY(dp(6));
+        brandBox.setTranslationY(dp(9));
         brandBox.addView(tv("BilgiliMedia", 21, text(), true));
         brandBox.addView(tv("Bilgi • Keşif • Medya", 11, secondary(), false));
         header.addView(brandBox, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -747,10 +747,11 @@ public class MainActivity extends Activity {
     }
 
     private void renderAccounts() {
+        content.removeAllViews();
         renderHeader(false);
         content.addView(tv("BilgiliMedia hesapları",27,text(),true));
         TextView d=tv("33 sosyal medya hesabımıza tek yerden ulaş.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
-        content.addView(chipRow(new String[]{"Tümü","Instagram","YouTube","TikTok","Facebook"},accountPlatformFilter,v->{accountPlatformFilter=(String)v;renderAccounts();}));
+        content.addView(chipRow(new String[]{"Tümü","Instagram","YouTube","TikTok","Facebook"},accountPlatformFilter,v->{accountPlatformFilter=(String)v;showScreen("accounts");}));
         for(Models.SocialAccount a:accounts){ if("Tümü".equals(accountPlatformFilter)||accountPlatformFilter.equals(a.platform)) content.addView(accountCard(a)); }
     }
 
@@ -836,7 +837,7 @@ public class MainActivity extends Activity {
         content.removeAllViews();
         renderHeader(false);
         content.addView(tv("Bildirimler",27,text(),true));
-        content.addView(tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç. Teknik Firebase işlemleri arka planda otomatik yönetilir.",14,secondary(),false));
+        content.addView(tv("Yeni içeriklerde hangi kategorilerden haber almak istediğini seç.",14,secondary(),false));
 
         boolean master = prefs.getBoolean("notify_master", false);
         boolean enabled = master && notificationsAllowed();
