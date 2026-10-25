@@ -159,7 +159,7 @@ public class MainActivity extends Activity {
 
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(16), dp(9), dp(12), dp(8));
+        header.setPadding(dp(16), dp(9), dp(12), dp(26));
         header.setBackgroundColor(card());
 
         TextView play = tv("▶", 18, Color.WHITE, true);
@@ -425,11 +425,11 @@ public class MainActivity extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setPadding(0, dp(2), 0, dp(8));
         TextView all = chip("Tümü", categoryFilter.equals("Tümü"));
-        all.setOnClickListener(v -> { categoryFilter = "Tümü"; if (compact) renderSearch(); else renderHome(); });
+        all.setOnClickListener(v -> { categoryFilter = "Tümü"; if (compact) showScreen("search"); else showScreen("home"); });
         row.addView(all);
         for (Models.Category c : config.categories) {
             TextView t = chip(c.name, categoryFilter.equals(c.name));
-            t.setOnClickListener(v -> { categoryFilter = c.name; if (compact) renderSearch(); else renderHome(); });
+            t.setOnClickListener(v -> { categoryFilter = c.name; if (compact) showScreen("search"); else showScreen("home"); });
             row.addView(t);
         }
         sc.addView(row);
@@ -539,7 +539,7 @@ public class MainActivity extends Activity {
         LinearLayout typeRow = new LinearLayout(this);
         for (String value : new String[]{"Tümü","Yazı","Video","Favoriler"}) {
             TextView chip = pill(value, value.equals(typeFilter));
-            chip.setOnClickListener(v -> { typeFilter = value; renderSearch(); });
+            chip.setOnClickListener(v -> { typeFilter = value; showScreen("search"); });
             typeRow.addView(chip);
         }
         HorizontalScrollView typeScroll = new HorizontalScrollView(this);
@@ -554,7 +554,7 @@ public class MainActivity extends Activity {
         LinearLayout sortRow = new LinearLayout(this);
         for (String value : new String[]{"Yeni","Popüler"}) {
             TextView chip = pill(value, value.equals(sortFilter));
-            chip.setOnClickListener(v -> { sortFilter = value; renderSearch(); });
+            chip.setOnClickListener(v -> { sortFilter = value; showScreen("search"); });
             sortRow.addView(chip);
         }
         content.addView(sortRow);
@@ -570,7 +570,7 @@ public class MainActivity extends Activity {
         LinearLayout categoryRow = new LinearLayout(this);
         for (String value : categoryNames) {
             TextView chip = pill(value, value.equals(categoryFilter));
-            chip.setOnClickListener(v -> { categoryFilter = value; renderSearch(); });
+            chip.setOnClickListener(v -> { categoryFilter = value; showScreen("search"); });
             categoryRow.addView(chip);
         }
         HorizontalScrollView categoryScroll = new HorizontalScrollView(this);
@@ -713,7 +713,7 @@ public class MainActivity extends Activity {
         TextView clear = pill("Geçmişi temizle", false);
         clear.setOnClickListener(v -> confirm("Okuma geçmişi temizlensin mi?", () -> {
             prefs.edit().remove("history_all").apply();
-            renderHistory();
+            showScreen("history");
         }));
         content.addView(clear);
 
@@ -792,7 +792,7 @@ public class MainActivity extends Activity {
         TextView d=tv("Ayarlar, gizlilik ve BilgiliMedia bağlantıları.",14,secondary(),false); d.setPadding(0,dp(3),0,dp(10)); content.addView(d);
         sectionTitle("Uygulama","Tercihler ve kişisel alan");
         content.addView(menuCard("⚙ Ayarlar","Tema ve yerel veriler",()->showScreen("settings")));
-        String notifyState=notificationsAllowed()?"Açık":"Kapalı";
+        String notifyState=notificationsAllowed()&&prefs.getBoolean("notify_master",false)?"Açık":"Kapalı";
         content.addView(menuCard("▣ Bildirimler",notifyState,()->showScreen("notifications")));
         content.addView(menuCard("▤ Okuma Geçmişi",historyIds().size()+" kayıt",()->showScreen("history")));
 
@@ -1027,7 +1027,7 @@ public class MainActivity extends Activity {
         addInfo("Paket",getPackageName());addInfo("Sürüm","1.4.9 (23)");addInfo("Feed","v"+feedVersion);addInfo("Config",prefs.getString("config_updated_at","bilinmiyor"));
         TextView copy=pill("FCM tokenını kopyala",false);copy.setOnClickListener(v->{ClipboardManager cm=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(cm!=null)cm.setPrimaryClip(ClipData.newPlainText("FCM token",token));Toast.makeText(this,"Token kopyalandı",Toast.LENGTH_SHORT).show();});content.addView(copy);
         TextView verify=pill("Topic aboneliklerini doğrula",false);verify.setOnClickListener(v->{NotificationSync.sync(this,config);Toast.makeText(this,"Topic eşleşmesi yenilendi",Toast.LENGTH_SHORT).show();});content.addView(verify);
-        TextView renew=pill("FCM kaydını yenile",false);renew.setOnClickListener(v->FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(t->{FirebaseMessaging.getInstance().getToken().addOnSuccessListener(x->{prefs.edit().putString("fcm_token",x).apply();NotificationSync.sync(this,config);renderDeveloper();});}));content.addView(renew);
+        TextView renew=pill("FCM kaydını yenile",false);renew.setOnClickListener(v->FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(t->{FirebaseMessaging.getInstance().getToken().addOnSuccessListener(x->{prefs.edit().putString("fcm_token",x).apply();NotificationSync.sync(this,config);showScreen("developer");});}));content.addView(renew);
         TextView local=pill("Yerel test bildirimi gönder",true);local.setOnClickListener(v->NotificationHelper.show(this,"","Genel","BilgiliMedia test bildirimi","Bildirim altyapısı çalışıyor."));content.addView(local);
     }
 
