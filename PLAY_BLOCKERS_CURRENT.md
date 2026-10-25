@@ -1,116 +1,135 @@
-# BilgiliMedia — Google Play kalan işler (24 Ekim 2026)
+# BilgiliMedia — Google Play kalan işler (25 Ekim 2026)
 
-Bu dosya yalnız **henüz kapanmamış** maddeleri listeler.
+Bu dosya yalnız **henüz kapanmamış** veya kullanıcı/Play Console doğrulaması bekleyen maddeleri listeler.
 
 ## A. Yayını bloke edenler
 
 ### 1. Geliştirici hesabı kimlik doğrulaması
-Durum: BEKLİYOR.
+Durum: BEKLİYOR — kimlik belgesi kullanıcıya ulaşmadı.
 
-Kimlik belgesi henüz kullanıcıya ulaşmadığı için Play Console geliştirici kimlik doğrulaması tamamlanmadı.
+Türkiye'de bireysel hesap doğrulamasında, Play Console akışına göre:
+- geçerli devlet tarafından verilmiş kimlik belgesi,
+- gerekirse son 90 gün içinde düzenlenmiş ad/adres eşleşen adres kanıtı,
+- Google Payments profilindeki ad ve adres ile belgelerin birebir eşleşmesi
+hazır olmalıdır.
 
-### 2. Yeniden üretilebilir production Android kaynak projesi
-Durum: DEVAM EDİYOR.
+Kimlik gelir gelmez Play Console'da doğrulama tamamlanacak.
 
-Orijinal 1.4.8 APK golden reference olarak sabitlendi. APK programatik Java arayüzü kullanıyor ve kullanıcıya ait ana sınıfların ekran/özellik haritası çıkarıldı.
+### 2. Final Android kaynak onayı
+Durum: SON CİHAZ ONAYI BEKLİYOR.
+
+Reproducible production Android kaynak projesi artık `final-android-hardening` dalında / PR #23 altında mevcut.
+CI şu kontrolleri çalıştırıyor:
+- source contract,
+- Android lint,
+- QA APK,
+- release APK,
+- release AAB,
+- production artifact audit,
+- CodeQL.
 
 Kalan:
-- source project yeniden oluşturma/kurtarma,
-- golden UI regression,
-- production flavor/package `com.bilgilimedia.mobile`.
+- kullanıcının son header/logo düzenini gerçek cihazda onaylaması,
+- onaydan sonra PR #23'ün `main`e alınması ve UI'nın kilitlenmesi.
 
-### 3. Final production AAB
-Durum: BEKLİYOR.
+### 3. Final imzalı production AAB
+Durum: KISMEN HAZIR.
 
-Final AAB ancak source parity doğrulandıktan sonra üretilecek.
+CI, production package `com.bilgilimedia.mobile` için release AAB üretiyor ve artifact audit'ten geçiriyor.
+Ancak Play'e yüklenecek final AAB için:
+- final UI cihaz onayı,
+- production/upload signing yapılandırması,
+- imzalı upload AAB,
+- Play Console App Bundle Explorer / pre-launch kontrolü
+tamamlanmalıdır.
 
-Zorunlu:
+Teknik hedefler:
 - package: `com.bilgilimedia.mobile`
-- versionCode >= 23
-- targetSdk 36
-- minSdk 26
-- production Firebase config
-- güncel firebase-messaging ana modülü
-- AAB
-- 16 KB uyumluluk testi
+- versionCode: `23` veya daha yüksek
+- targetSdk: `36`
+- minSdk: `26`
+- cleartext: kapalı
+- backup: kapalı
+- 16 KB uyumluluk artifact audit'i: aktif
 
-### 4. Play App Signing
-Durum: BEKLİYOR.
+### 4. Play App Signing / imza sürekliliği
+Durum: PLAY CONSOLE UYGULAMASI OLUŞTURULUNCA.
 
-Kimlik doğrulaması / app creation sonrası:
-- mevcut production app-signing key sürekliliği planlanacak,
-- Play App Signing certificate SHA-256 alınacak,
-- `assetlinks.json` fingerprint final olarak karşılaştırılacak,
-- upload key ayrı tutulacak.
+Mevcut production sertifika SHA-256:
+`F6:84:6E:CB:EC:19:CC:99:DB:68:2A:37:4F:47:8F:D1:9B:59:E6:96:54:2E:C5:0F:16:B5:33:0E:DD:DF:CF:6A`
 
-## B. Play Console form işlemleri
+Amaç:
+- mevcut `com.bilgilimedia.mobile` imza sürekliliğini korumak,
+- Play App Signing yapılandırmasında mevcut app-signing key'i kullanmak,
+- upload key'i ayrı tutmak,
+- Play'in gösterdiği App Signing SHA-256 fingerprint(ler)ini `assetlinks.json` ile karşılaştırmak.
 
-Kimlik geldikten sonra:
+## B. Kimlik gelir gelmez Play Console sırası
 
-- Create app
-- package registration
-- app access
-- ads declaration
-- Data Safety
-- privacy URL
-- IARC content rating
-- target audience
-- news declaration
-- store listing
-- app signing
-- closed test
+1. Kimlik / Payments profil doğrulamasını tamamla.
+2. `com.bilgilimedia.mobile` paket kaydını doğrula/kaydet.
+3. BilgiliMedia uygulamasını oluştur.
+4. Play App Signing'i mevcut imza sürekliliğine göre yapılandır.
+5. Final imzalı AAB'yi yükle.
+6. App access: giriş gerekmiyor.
+7. Ads: sponsor sistemi kapalıyken No.
+8. Privacy URL.
+9. Data Safety.
+10. IARC içerik derecelendirme.
+11. Target audience.
+12. News declaration.
+13. Store listing.
+14. Internal / Closed testing release.
 
-## C. Fiziksel QA
+## C. Kapalı test gerekliliği
 
-Final production build üzerinde:
+Eğer kişisel geliştirici hesabı 13 Kasım 2023 sonrasında oluşturulduysa:
+- en az 12 tester,
+- testerların en az 14 gün kesintisiz opted-in kalması,
+- sonrasında production access başvurusu
+gerekiyor.
 
-- temiz kurulum
-- eski production APK üstüne güncelleme
-- Android 13+ notification permission
-- FCM token/topic
-- reboot/update sonrası topic
-- App Links
-- sosyal app -> browser fallback
-- favoriler/geçmiş korunumu
-- offline/yavaş ağ
-- rotation
-- büyük font / erişilebilirlik
-- API 26 minimum
-- API 36
-- 16 KB page-size device/emulator
+Bu süre Play tarafından zorunluysa kimlik doğrulaması tamamlanınca mümkün olan en erken anda closed test başlatılmalıdır.
 
-## D. Store varlıkları
+## D. Fiziksel QA
+
+Final production-signed veya Play-delivered build üzerinde:
+- temiz kurulum,
+- eski `com.bilgilimedia.mobile` sürümünün üzerine güncelleme,
+- API 26 ve API 36,
+- Android 13+ notification permission,
+- FCM token/topic,
+- reboot/update sonrası topic,
+- kategori seçimi boşken bildirim gelmemesi,
+- App Links,
+- app-first içerik paylaşımı + web fallback,
+- sosyal app -> HTTPS fallback,
+- favoriler/geçmiş/tema/bildirim tercihlerinin güncellemede korunması,
+- offline/yavaş ağ,
+- büyük font/erişilebilirlik,
+- 16 KB page-size ortamı.
+
+## E. Store varlıkları
 
 Hazır:
-- 512×512 ikon
-- 1024×500 feature graphic
-- TR mağaza metni
-- privacy URL
-- support email
+- 512×512 ikon,
+- 1024×500 feature graphic,
+- Türkçe mağaza metni,
+- privacy URL,
+- support email.
 
 Kalan:
 - final production build ekran görüntüleri,
 - final build ile mağaza metni parity kontrolü.
 
-## E. Hesap türüne bağlı kapalı test
+## F. Tamamlanan altyapı
 
-Eğer kişisel geliştirici hesabı 13 Kasım 2023 sonrasında oluşturulduysa:
-- en az 12 tester
-- en az 14 gün kesintisiz opted-in kapalı test
-- ardından production access başvurusu
-
-## F. Tamamlanmış altyapı
-
-- Production Firebase Android app kayıtlı
-- production google-services.json indirildi
-- OIDC/WIF
-- service account JSON key yok
-- FCM dry-run
-- Schema v2
-- AI/HIGGS topics
-- App Links preview + production kaydı
-- privacy/Data Safety taslağı
-- Protect main
-- PR + validate
-- force push/delete engeli
-- CSP/security headers
+- Production Firebase Android app kayıtlı.
+- Firebase Messaging / topic altyapısı.
+- OIDC/WIF; uzun ömürlü service-account JSON key yok.
+- Schema v2, AI/HIGGS ve uzaktan kategori yapısı.
+- App-first paylaşım + web fallback.
+- Preview + production App Links.
+- Hosting CSP/security headers.
+- Protect main, PR + validate, force push/delete engeli.
+- Android CI: lint/build/AAB/artifact audit/CodeQL.
