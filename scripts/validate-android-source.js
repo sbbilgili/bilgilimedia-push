@@ -41,6 +41,7 @@ requireAll(manifest, [
   'android:autoVerify="true"',
   'android:host="bilgilimedia-60d6f.web.app"',
   'android:pathPrefix="/content/"',
+  'android:pathPrefix="/app"',
   'android.permission.POST_NOTIFICATIONS',
   'android.permission.RECEIVE_BOOT_COMPLETED'
 ], "Manifest contract");
@@ -150,6 +151,11 @@ requireAll(main, [
   '0xccd71920',
 
   '"?v="+feedVersion',
+  'private static final String APP_LINK = "https://bilgilimedia-60d6f.web.app/app"',
+  'i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\\n"+APP_LINK)',
+  'private boolean isAppHomeLink(Intent intent)',
+  '"/app".equals(data.getPath())',
+  'showScreen("home")',
   '"Ana Sayfa"',
   '"Ara"',
   '"Kayıtlar"',
@@ -272,4 +278,8 @@ console.log("Exact golden 1.4.8 DEX contract validated:", socialCount, "social a
 if (main.includes('prefs.getBoolean("notify_master",true)') ||
     main.includes('prefs.getBoolean("notify_master", true)')) {
   throw new Error("notify_master must default false everywhere in the golden-compatible UI");
+}
+
+if (main.includes('i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\\n"+WEB)')) {
+  throw new Error("App share must use the verified /app App Link, not the external short URL directly");
 }
