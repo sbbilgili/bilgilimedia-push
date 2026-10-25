@@ -36,18 +36,39 @@ Kabul edilen 1.4.8 APK:
 
 Golden APK'nin kendisi UI ve davranış açısından otoritedir. Kaynak içindeki string kontrolleri tek başına parity kanıtı sayılmaz.
 
-## Fiziksel cihazda zorunlu kabul testleri
+## Kullanıcı onaylı UI baseline
 
-Aşağıdaki maddeler kullanıcı tarafından gerçek cihazda kabul edilmeden dal `main`e merge edilmez:
+25 Ekim 2026 tarihinde kullanıcı son QA build'ini gerçek cihazda onayladı.
 
-- [ ] Ana Sayfa 1.4.8 ile görsel olarak kabul edildi.
-- [ ] Ara ekranı ve filtre davranışı kabul edildi.
-- [ ] Kayıtlar/Favoriler kabul edildi.
-- [ ] Hesaplar ekranı ve 33 sosyal hesap davranışı kabul edildi.
-- [ ] Daha ekranı kabul edildi.
-- [ ] Bildirimler ekranı 1.4.8 ile aynı kullanıcı deneyimini veriyor.
-- [ ] Android geri tuşu: alt ekranlardan doğru üst ekrana dönüyor; beklenmedik uygulama kapanması yok.
-- [ ] Makale ekranından geri dönüş doğru.
+Onaylanan QA APK:
+- versionName: `1.4.9-qa`
+- production source versionCode: `23`
+- SHA-256: `3d7fe84c2dd826539b6eec5858277ef6b04d91d77dedef5c72cc2e58215275db`
+
+Bu build ile onaylanan başlıca UI/UX kararları:
+- BilgiliMedia header görünümü,
+- küçültülmüş kırmızı oynatıcı sembolü,
+- alt etiket `İçerikler • Medya`,
+- Hızlı Erişim / İçerik Kanallarımız yerleşimi,
+- Bildirimler ekranı ve kategori seçimi,
+- Hesaplar içi platform geçişi,
+- çift geri çıkış davranışı,
+- içerik paylaşımı app-first + web fallback.
+
+Bu onaydan sonra 1.4.9 UI baseline kilitlidir. Yeni görsel değişiklik yalnız açık yeni sürüm kararıyla yapılır.
+
+## Fiziksel cihaz / Play-delivered zorunlu kabul testleri
+
+Aşağıdaki maddeler Play production yayını açılmadan tamamlanmalıdır:
+
+- [x] Ana Sayfa / final header görünümü kullanıcı tarafından kabul edildi.
+- [x] Ara ekranı ve filtre davranışı kaynak/QA regresyon kontrolünden geçti.
+- [x] Kayıtlar/Favoriler mevcut final UI baseline içinde kabul edildi.
+- [x] Hesaplar ekranı ve platform geçişi kullanıcı tarafından kabul edildi.
+- [x] Daha ekranı mevcut final UI baseline içinde kabul edildi.
+- [x] Bildirimler ekranı ve kategori seçimi kullanıcı tarafından kabul edildi.
+- [x] Android geri tuşu / çift geri çıkış davranışı kullanıcı tarafından kabul edildi.
+- [x] Makale ekranından geri dönüş kaynak/QA regresyon kontrolünde korunuyor.
 - [ ] Açık/koyu/sistem tema davranışı doğru.
 - [ ] Favoriler, geçmiş ve tercihler güncellemede korunuyor.
 - [ ] Android 13+ bildirim izni doğru.
@@ -70,11 +91,20 @@ Final imzalı build için production Firebase Android kaydı:
 
 `google-services-production.json` kurtarma arşivinde saklıdır. Servis hesabı private key'i repository'ye eklenmez.
 
-## Merge kuralı
+## Kaynak merge ve yayın kuralı
 
-`main` korumalı kalır. Final Android dalı ancak:
-1. CI tamamen yeşil,
-2. bu belgedeki fiziksel QA maddeleri kabul edilmiş,
-3. kullanıcı tarafından 1.4.8 arayüz parity'si onaylanmış,
-4. Play Console app-signing fingerprint doğrulanmış
-olduğunda merge edilir.
+`main` korumalı kalır.
+
+Android kaynak baseline'ı `main`e alınabilir ancak:
+1. CI tamamen yeşil olmalı,
+2. kullanıcı final UI baseline'ını gerçek cihazda onaylamış olmalı,
+3. kaynak ve güvenlik regresyon kontrolleri geçmeli.
+
+Google Play production yayını ise ayrıca:
+1. geliştirici kimlik doğrulaması,
+2. Play App Signing / upload signing yapılandırması,
+3. Play App Signing fingerprint doğrulaması,
+4. final imzalı AAB,
+5. Play-delivered fiziksel QA,
+6. hesap uygunsa kapalı test şartı
+tamamlanmadan açılamaz.
