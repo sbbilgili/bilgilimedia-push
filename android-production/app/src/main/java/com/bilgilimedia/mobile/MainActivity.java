@@ -63,7 +63,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
-    private static final int REQ_NOTIFICATION = 1408;
+    private static final int REQ_NOTIFICATION = 901;
     private static final String WEB = "https://spoo.me/bilgilimedia";
     private static final String PRIVACY = "https://bilgilimedia-60d6f.web.app/privacy/";
     private static final String EMAIL = "sukrubatuhanbilgili@gmail.com";
@@ -895,9 +895,7 @@ public class MainActivity extends Activity {
 
     private void syncNotifications(boolean showFeedback) {
         NotificationSync.sync(this, config);
-        if (showFeedback
-                && prefs.getBoolean("notify_master", false)
-                && getNotifyCategories().isEmpty()) {
+        if (showFeedback && getNotifyCategories().isEmpty()) {
             Toast.makeText(this, "Seçili kategori yok", Toast.LENGTH_SHORT).show();
         }
     }
