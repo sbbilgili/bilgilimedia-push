@@ -2,22 +2,46 @@
 
 Bu dosya, Play Console'daki **Veri güvenliği** formunu son üretim AAB ile tutarlı doldurmak için hazırlanmıştır. Play Console'da o gün görünen soru metni her zaman önceliklidir.
 
-## Doğrulanmış referans build
+## Final 1.4.9 kaynak baseline
 
-24 Ekim 2026'da denetlenen orijinal arayüzlü preview APK:
+25 Ekim 2026'da kullanıcı tarafından onaylanan ve `main`e alınan Android kaynak:
 
-- Paket: `com.bilgilimedia.mobile.media.preview`
-- Sürüm: `1.4.8`
-- versionCode: `22`
-- SHA-256: `dca81609a1df783de5606ee646af4bd672121aed0188a84886db1c0652ccae76`
+- Production package: `com.bilgilimedia.mobile`
+- versionName: `1.4.9`
+- versionCode: `23`
+- targetSdk: `36`
+- minSdk: `26`
 - Firebase Cloud Messaging: mevcut
+- Firebase Installations: firebase-messaging üzerinden transitif olarak mevcut
 - Google Analytics for Firebase: yok
 - Crashlytics: yok
-- AdMob / üçüncü taraf reklam SDK'sı: yok
+- AdMob / Google Mobile Ads: yok
 - Hesap / giriş sistemi: yok
-- Konum, kamera, mikrofon, rehber, SMS, genel depolama izni: yok
+- Konum, kamera, mikrofon, rehber, SMS, telefon ve genel depolama erişimi: yok
+- cleartext HTTP: kapalı
+- uygulama backup: kapalı
+- favoriler, okuma geçmişi, tema ve bildirim tercihleri: cihazda yerel SharedPreferences
 
-Final Play AAB üretildikten sonra bu tespitler AAB üzerinde yeniden doğrulanmalıdır.
+CI release candidate APK/AAB üzerinde izin, package, API seviyesi ve artifact audit çalıştırır. Play'e yüklenecek imzalı final AAB üzerinde bu tespitler son kez tekrar doğrulanmalıdır.
+
+## Console için hazır cevap özeti
+
+Play Console'daki güncel soru metni her zaman önceliklidir. Mevcut 1.4.9 davranışına göre çalışma cevabı:
+
+| Soru / alan | Hazır cevap |
+| --- | --- |
+| Uygulama kullanıcı verisi topluyor mu? | **Evet** |
+| Device or other IDs | **Toplanıyor** — Firebase Installation ID (FID) |
+| Amaç | **App functionality / Uygulama işlevselliği** — FCM kurulum hedefleme ve kategori bildirimleri |
+| Toplama isteğe bağlı mı? | **Hayır** — Firebase Installations/FCM teknik kimliği SDK tarafından otomatik oluşturulabilir |
+| Üçüncü tarafla paylaşım | **Hayır olarak değerlendirilir**, Firebase/Google yalnız BilgiliMedia adına hizmet sağlayıcı olarak işliyorsa Play'in service-provider istisnası uygulanır |
+| Veri aktarımda şifreli mi? | **Evet** — Firebase ve BilgiliMedia ağ trafiği HTTPS/TLS |
+| Hesap oluşturma | **Yok** |
+| Hesap silme | **Uygulanamaz** — kullanıcı hesabı yok |
+| Reklam içeriyor mu? | **Hayır**, `sponsorAds.enabled=false` olduğu sürece |
+| Analytics | **Yok** |
+| Crash reporting SDK | **Yok** |
+| Konum / kamera / mikrofon | **Toplanmıyor / izin istenmiyor** |
 
 ## Data Safety için önerilen temel beyan
 
@@ -45,9 +69,9 @@ Play Console'un o günkü açıklamalarına göre yeni içerik push'larının �
 
 ### Veri paylaşımı
 
-Mevcut mimaride BilgiliMedia, bu teknik kimlikleri reklam ağına veya bağımsız üçüncü taraflara satmaz ya da paylaşmaz. Firebase/Google teknik verileri BilgiliMedia adına hizmet sağlayıcı olarak işler.
+Mevcut mimaride BilgiliMedia, FID/FCM teknik kimliklerini reklam ağına satmaz ve bağımsız üçüncü taraf profilleme amacıyla paylaşmaz.
 
-Play Console'un güncel “sharing” tanımındaki **service provider exception** kontrol edilerek önerilen cevap **No / Hayır** olarak doğrulanmalıdır.
+Firebase/Google, FCM ve Firebase Installations verilerini uygulama işlevselliğini sağlamak üzere BilgiliMedia adına hizmet sağlayıcı olarak işler. Play'in güncel Data Safety tanımında bir service provider'ın geliştirici adına veri işlemesi “sharing” beyanından istisna tutulabilir. Bu nedenle mevcut kullanım için çalışma cevabı **Shared: No / Hayır**dır; Console'daki güncel soru metni ve Firebase kullanım yapılandırması son yükleme gününde yeniden kontrol edilmelidir.
 
 ### Zorunlu / isteğe bağlı
 
@@ -97,9 +121,11 @@ Sponsorlu içerik etkinleştirilmeden önce “Contains ads”, gizlilik politik
 
 ## Final AAB için zorunlu tekrar kontrol
 
-- [ ] Production package `com.bilgilimedia.mobile` üzerinde SDK taraması yapıldı.
-- [ ] Firebase Messaging/Installations dışında veri toplayan SDK yok.
-- [ ] Analytics/Crashlytics/AdMob eklenmedi.
-- [ ] Manifest izinleri tekrar doğrulandı.
-- [ ] Data Safety formundaki “collected/shared/purpose/optional” seçenekleri final AAB davranışıyla eşleşiyor.
-- [ ] Gizlilik URL'si canlı ve Play Console'a girildi.
+- [x] Production kaynakta yalnız Firebase Messaging bağımlılığı var; Installations transitif.
+- [x] Analytics/Crashlytics/AdMob dependency yok.
+- [x] CI manifest izinlerini ve hassas izin yokluğunu doğruluyor.
+- [x] cleartext trafik kapalı.
+- [ ] Play'e yüklenecek final imzalı AAB üzerinde SDK/manifest tekrar doğrulandı.
+- [ ] Data Safety formundaki “collected/shared/purpose/optional” seçenekleri o günkü Console metniyle eşleştirildi.
+- [ ] Gizlilik URL'si Play Console'a girildi.
+- [ ] Play review sonrası Data Safety ekranı mağaza girişinde beklenen şekilde görünüyor.
