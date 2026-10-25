@@ -16,10 +16,16 @@ hazır olmalıdır.
 Kimlik gelir gelmez Play Console'da doğrulama tamamlanacak.
 
 ### 2. Final Android kaynak onayı
-Durum: SON CİHAZ ONAYI BEKLİYOR.
+Durum: TAMAMLANDI.
 
-Reproducible production Android kaynak projesi artık `final-android-hardening` dalında / PR #23 altında mevcut.
-CI şu kontrolleri çalıştırıyor:
+Kullanıcı 25 Ekim 2026'da final 1.4.9 UI baseline'ını gerçek cihazda onayladı.
+PR #23 `main`e merge edildi ve Android kaynak projesi artık ana repoda yeniden üretilebilir durumda.
+
+UI kilit kaydı:
+- `ANDROID_UI_LOCK_1_4_9.md`
+- final kabul kapısı: `FINAL_ANDROID_ACCEPTANCE.md`
+
+CI kontrolleri:
 - source contract,
 - Android lint,
 - QA APK,
@@ -28,12 +34,8 @@ CI şu kontrolleri çalıştırıyor:
 - production artifact audit,
 - CodeQL.
 
-Kalan:
-- kullanıcının son header/logo düzenini gerçek cihazda onaylaması,
-- onaydan sonra PR #23'ün `main`e alınması ve UI'nın kilitlenmesi.
-
 ### 3. Final imzalı production AAB
-Durum: KISMEN HAZIR.
+Durum: İMZA / PLAY CONSOLE AŞAMASI BEKLİYOR.
 
 CI, production package `com.bilgilimedia.mobile` için release AAB üretiyor ve artifact audit'ten geçiriyor.
 Ancak Play'e yüklenecek final AAB için:
