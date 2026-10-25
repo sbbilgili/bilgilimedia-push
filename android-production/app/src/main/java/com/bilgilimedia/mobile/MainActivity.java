@@ -159,21 +159,23 @@ public class MainActivity extends Activity {
 
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(16), dp(9), dp(12), dp(16));
+        header.setPadding(dp(16), dp(12), dp(12), dp(12));
+        header.setMinimumHeight(dp(76));
         header.setBackgroundColor(card());
 
-        TextView play = tv("▶", 17, Color.WHITE, true);
+        TextView play = tv("▶", 15, Color.WHITE, true);
         play.setGravity(Gravity.CENTER);
-        play.setBackground(round(brand(), 14));
-        play.setTranslationY(dp(10));
-        header.addView(play, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        play.setBackground(round(brand(), 12));
+        header.addView(play, new LinearLayout.LayoutParams(dp(34), dp(34)));
 
         LinearLayout brandBox = new LinearLayout(this);
         brandBox.setOrientation(LinearLayout.VERTICAL);
+        brandBox.setGravity(Gravity.CENTER_VERTICAL);
         brandBox.setPadding(dp(10), 0, 0, 0);
-        brandBox.setTranslationY(dp(10));
         brandBox.addView(tv("BilgiliMedia", 21, text(), true));
-        brandBox.addView(tv("İçerikler • Medya", 11, secondary(), false));
+        TextView brandSubtitle = tv("İçerikler • Medya", 11, secondary(), false);
+        brandSubtitle.setPadding(0, dp(2), 0, dp(1));
+        brandBox.addView(brandSubtitle);
         header.addView(brandBox, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         TextView external = tv("↗", 24, text(), true);
