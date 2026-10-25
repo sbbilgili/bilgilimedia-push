@@ -52,6 +52,8 @@ requireAll(main, [
   'tv("▶", 18, Color.WHITE, true)',
   'new LinearLayout.LayoutParams(dp(42), dp(42))',
   'tv("BilgiliMedia", 21, text(), true)',
+  'play.setTranslationY(dp(3))',
+  'brandBox.setTranslationY(dp(3))',
   'tv("Bilgi • Keşif • Medya", 11, secondary(), false)',
   'tv("↗", 24, text(), true)',
   'new LinearLayout.LayoutParams(dp(44), dp(44))',
