@@ -64,12 +64,13 @@ requireAll(app, [
 ], "Firebase startup resilience");
 
 requireAll(main, [
-  'header.setPadding(dp(16), dp(9), dp(12), dp(16))',
-  'tv("▶", 17, Color.WHITE, true)',
-  'new LinearLayout.LayoutParams(dp(38), dp(38))',
+  'header.setPadding(dp(16), dp(12), dp(12), dp(12))',
+  'tv("▶", 15, Color.WHITE, true)',
+  'new LinearLayout.LayoutParams(dp(34), dp(34))',
   'tv("BilgiliMedia", 21, text(), true)',
-  'play.setTranslationY(dp(10))',
-  'brandBox.setTranslationY(dp(10))',
+  'header.setMinimumHeight(dp(76))',
+  'brandBox.setGravity(Gravity.CENTER_VERTICAL)',
+  'brandSubtitle.setPadding(0, dp(2), 0, dp(1))',
   'tv("İçerikler • Medya", 11, secondary(), false)',
   'tv("↗", 24, text(), true)',
   'new LinearLayout.LayoutParams(dp(44), dp(44))',
