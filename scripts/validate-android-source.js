@@ -49,7 +49,7 @@ requireAll(manifest, [
 if (!/PREFS\s*=\s*"preferences"/.test(data)) throw new Error("Local-data compatibility must use SharedPreferences name: preferences");
 
 requireAll(main, [
-  'header.setPadding(dp(16), dp(9), dp(12), dp(8))',
+  'header.setPadding(dp(16), dp(9), dp(12), dp(26))',
   'tv("▶", 18, Color.WHITE, true)',
   'new LinearLayout.LayoutParams(dp(42), dp(42))',
   'tv("BilgiliMedia", 21, text(), true)',
@@ -226,6 +226,17 @@ requireAll(main, [
   'new String[]{"Tümü","Instagram","YouTube","TikTok","Facebook"}',
   'accountPlatformFilter=(String)v;showScreen("accounts")'
 ], "Accounts platform switching contract");
+
+requireAll(main, [
+  'if (compact) showScreen("search"); else showScreen("home")',
+  'typeFilter = value; showScreen("search")',
+  'sortFilter = value; showScreen("search")',
+  'categoryFilter = value; showScreen("search")',
+  'prefs.edit().remove("history_all").apply();',
+  'showScreen("history")',
+  'NotificationSync.sync(this,config);showScreen("developer")',
+  'notificationsAllowed()&&prefs.getBoolean("notify_master",false)'
+], "Clean redraw and notification-state contract");
 if (main.includes('accountPlatformFilter=(String)v;renderAccounts()')) {
   throw new Error("Accounts platform changes must redraw through showScreen(\"accounts\")");
 }
@@ -306,4 +317,17 @@ if (main.includes('i.putExtra(Intent.EXTRA_TEXT,"BilgiliMedia\\n"+WEB)')) {
 }
 if (main.includes('DataRepository.HOST_BASE+"/content/"+Uri.encode(a.id)+"?v="+feedVersion')) {
   throw new Error("Content sharing must use the app-first /open/content launcher URL");
+}
+
+for (const forbidden of [
+  'typeFilter = value; renderSearch();',
+  'sortFilter = value; renderSearch();',
+  'categoryFilter = value; renderSearch();',
+  'if (compact) renderSearch(); else renderHome();',
+  'prefs.edit().remove("history_all").apply();\n            renderHistory();',
+  'NotificationSync.sync(this,config);renderDeveloper()'
+]) {
+  if (main.includes(forbidden)) {
+    throw new Error("Interactive redraw must use showScreen(): " + forbidden);
+  }
 }
