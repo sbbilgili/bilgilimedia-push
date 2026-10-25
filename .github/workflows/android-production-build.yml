@@ -9,6 +9,8 @@ on:
       - "content/feed.json"
       - "hosting/app-config.json"
       - "scripts/validate-android-source.js"
+      - "scripts/audit-android-artifacts.sh"
+      - "FINAL_ANDROID_ACCEPTANCE.md"
       - ".github/workflows/android-production-build.yml"
   workflow_dispatch:
 
@@ -17,16 +19,20 @@ permissions:
 
 jobs:
   build-android:
-    name: Android source + build
+    name: Android release gate
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Validate recovered source contract
+      - name: Validate repository content/config
+        run: node scripts/validate-content.js
+
+      - name: Validate recovered Android source contract
         run: node scripts/validate-android-source.js
 
       - name: Set up Java
@@ -55,26 +61,29 @@ jobs:
           cp content/feed.json android-production/app/src/main/assets/feed.json
           cp hosting/app-config.json android-production/app/src/main/assets/app-config.json
 
-      - name: Build QA APK and production AAB
+      - name: Android lint
         working-directory: android-production
-        run: gradle --no-daemon clean :app:assembleDebug :app:bundleRelease
+        run: gradle --no-daemon --warning-mode=all :app:lintRelease
 
-      - name: Audit generated artifacts
+      - name: Build QA APK, release APK and production AAB
+        working-directory: android-production
+        run: gradle --no-daemon --warning-mode=all :app:assembleDebug :app:assembleRelease :app:bundleRelease
+
+      - name: Audit production artifacts
         shell: bash
         run: |
-          test -s android-production/app/build/outputs/apk/debug/app-debug.apk
-          test -s android-production/app/build/outputs/bundle/release/app-release.aab
-          unzip -t android-production/app/build/outputs/apk/debug/app-debug.apk >/dev/null
-          unzip -t android-production/app/build/outputs/bundle/release/app-release.aab >/dev/null
-          echo "QA APK bytes: $(stat -c%s android-production/app/build/outputs/apk/debug/app-debug.apk)"
-          echo "Production AAB bytes: $(stat -c%s android-production/app/build/outputs/bundle/release/app-release.aab)"
+          chmod +x scripts/audit-android-artifacts.sh
+          scripts/audit-android-artifacts.sh
 
-      - name: Upload Android candidate artifacts
+      - name: Upload Android candidate artifacts and reports
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: BilgiliMedia-Android-1.4.9-candidate
+          name: BilgiliMedia-Android-1.4.9-hardened-candidate
           if-no-files-found: error
           retention-days: 14
           path: |
             android-production/app/build/outputs/apk/debug/app-debug.apk
+            android-production/app/build/outputs/apk/release/app-release-unsigned.apk
             android-production/app/build/outputs/bundle/release/app-release.aab
+            android-production/app/build/reports/lint-results-release.html
+            android-production/app/build/reports/release-audit/summary.txt
